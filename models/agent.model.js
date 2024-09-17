@@ -107,6 +107,10 @@ const AgentSchema = new Schema(
       type: String,
       default: "AGENT",
     },
+    approved: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true, // Keep timestamps optional, these are generated automatically

@@ -12,7 +12,7 @@ import { verifyAdmin, verifyJwt } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.route("/register-student").post(registerStudent);
-router.route("/register/agent").post(registerAgent);
+router.route("/register-agent").post(registerAgent);
 router.route("/login").post(login);
 router.route("/logout").post(verifyJwt, logout);
 router.route("/change-password").patch(verifyJwt, changePassword);

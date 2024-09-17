@@ -11,16 +11,15 @@ import {
 } from "../validators/auth.validator.js";
 import { generateTokens } from "../utils/genrateToken.js";
 
+
 const registerStudent = asyncHandler(async (req, res) => {
   const payload = req.body;
-  console.log(req,"++++++")
   const validation = registerStudentSchema.safeParse(payload);
   if (!validation.success) {
     return res
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors));
   }
-    console.log("aaaaaaa")
   const findStudent = await Student.findOne({ email: payload.email });
   if (findStudent) {
     return res
@@ -61,7 +60,6 @@ const registerAgent = asyncHandler(async (req, res) => {
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
-
   const findAgent = await Agent.findOne({
     $or: [
       { "founder.email": payload.founder.email },
@@ -73,7 +71,7 @@ const registerAgent = asyncHandler(async (req, res) => {
       .status(409)
       .json(new ApiResponse(409, {}, "Email is already in use"));
   }
-
+   payload.password = await bcrypt.hash(payload.password, 10);
   const agent = await Agent.create(payload);
   const createdAgent = await Agent.findById(agent._id).select("-password");
 
@@ -88,17 +86,16 @@ const login = asyncHandler(async (req, res) => {
   if (!validation.success) {
     return res
       .status(400)
-      .json(new ApiResponse(400, {}, validation.error.errors[0].message));
+      .json(new ApiResponse(400, {}, validation.error.errors));
   }
 
   let user;
   let loggedInUser;
   if (payload.role === "student") {
     user = await Student.findOne({ email: payload.email });
-    if (!user.approved || !user) {
+    if (!user || !user.approved ) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
-
     const isPasswordValid = await user.isPasswordCorrect(payload.password);
     if (!isPasswordValid) {
       return res.status(400).json(new ApiResponse(400, {}, "Invalid password"));
@@ -106,9 +103,27 @@ const login = asyncHandler(async (req, res) => {
     loggedInUser = await Student.findById(user._id).select(
       "-password -refreshToken"
     );
+  } else if (payload.role === "agent") {
+
+      user = await Agent.findOne({ "founder.email": payload.email });
+     
+    if (!user || !user.approved) {
+      return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+    }
+    // console.log(user.password)
+    const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json(new ApiResponse(400, {}, "Invalid password"));
+    }
+    loggedInUser = await Agent.findById(user._id).select(
+      "-password -refreshToken"
+    );
   } else {
-    return res.status(200).json(new ApiResponse(200, {}, "agent login"));
+    return res.status(400).json(
+      new ApiResponse(400, {}, "Invalid user type")
+    )
   }
+
   let userData = {
     id: user._id,
     email: user.email,
@@ -156,7 +171,13 @@ const changePassword = asyncHandler(async (req, res) => {
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
-  const hashPassword = await bcrypt.hash(payload.newPassword, 10);
+  let user;
+  if(req.user.role === "STUDENT"){
+    user = await Student.findOne({ _id: req.user.id });
+    if (!user || !user.approved ) {
+      return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+    }
+    const hashPassword = await bcrypt.hash(payload.newPassword, 10);
   await Student.findOneAndUpdate(
     { _id: req.user.id },
     {
@@ -166,6 +187,34 @@ const changePassword = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+  } else if(req.user.role === "AGENT"){
+    user = await Agent.findOne({_id: req.user.id});
+     
+    if (!user || !user.approved) {
+      return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+    }
+    const hashPassword = await bcrypt.hash(payload.newPassword, 10);
+  await Agent.findOneAndUpdate(
+    { _id: req.user.id },
+    {
+      $set: {
+        password: hashPassword,
+      },
+    },
+    { new: true }
+  );
+  } else {
+    return res.status(400).json(
+      new ApiResponse(400, {}, "Invalid user type ")
+    )
+  }
+  const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+  if(!isPasswordValid){
+    return res.status(400).json(
+      new ApiResponse(400, {}, "Invalid password")
+    )
+  }
+  
 
   return res
     .status(200)

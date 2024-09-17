@@ -12,7 +12,6 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
   const payload = req.body;
-  // console.log(req.file, "+++++>>>><<<<<<<<<")
   // Validate payload using Zod
   const validation = studentPersonalInformationSchema.safeParse(payload);
   if (!validation.success) {
@@ -41,8 +40,6 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
     },
     studentId: req.user.id,
   };
-
-  console.log( req.user.id, "tttttttttttt")
 
   // Save personal information
   const studentPersonalInformation = await StudentInformation.create(data);
