@@ -55,6 +55,10 @@ const studentSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    hearAbout: {
+      type: String,
+      require: false
+    }
   },
   {
     timestamps: true,

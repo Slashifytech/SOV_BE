@@ -37,7 +37,8 @@ const registerStudent = asyncHandler(async (req, res) => {
       number: payload.number,
     },
     studentType: payload.studentType,
-    password: payload.password,
+    password: payload.password, 
+    hearAbout: payload.hearAbout || null
   };
 
   const student = await Student.create(data);
