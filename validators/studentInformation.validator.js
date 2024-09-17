@@ -13,7 +13,12 @@ export const studentPersonalInformationSchema = z.object({
     .nonempty("Date of Birth is required")
     .transform((dateString) => new Date(dateString)),
   firstLanguage: z.string().nonempty("First Language is required"),
-  // passportUpload: z.string().nonempty("Passport Upload is required"),
+   email:  z
+   .string()
+   .email("Enter a valid email address")
+   .nonempty("Email is required"),
+   countryCode: z.string().nonempty("Country code is required"),
+   phone: z.string().nonempty("Phone number is required"),
   countryOfCitizenship: z
     .string()
     .nonempty("Country of Citizenship is required"),

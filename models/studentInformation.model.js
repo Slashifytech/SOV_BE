@@ -1,5 +1,17 @@
 import mongoose, { Schema } from "mongoose";
 
+
+const PhoneSchema = new Schema({
+  countryCode: {
+    type: String,
+    required: true
+  },
+  phone: {
+    type: String,
+    required: true
+  }
+})
+
 // Define the schema for personal information
 const PersonalInformationSchema = new Schema(
   {
@@ -35,6 +47,16 @@ const PersonalInformationSchema = new Schema(
       type: String,
       required: false,
     },
+    email: {
+      type: String,
+      required: false,
+      unique: true,
+    },
+    phone: {
+      type: PhoneSchema,
+      required: false
+    },
+    
   },
   { _id: false }
 );

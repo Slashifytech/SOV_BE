@@ -32,8 +32,23 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
   }
 
   // Construct the student data object
+  const personalInformationData = {
+    title: payload.title,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    gender: payload.gender,
+    maritalStatus: payload.maritalStatus,
+    dob: payload.dob,
+     
+    firstLanguage: payload.firstLanguage,
+     email: payload.email,
+     phone:{
+      countryCode: payload.countryCode,
+       phone: payload.phone,
+     }
+  }
   const data = {
-    personalInformation: { ...payload },
+    personalInformation: personalInformationData,
     passportDetails: {
       passportUpload: passport.url,
       ...payload
