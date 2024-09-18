@@ -111,6 +111,32 @@ const ResidenceAddressSchema = new Schema(
   { _id: false }
 );
 
+const MailingAddressSchema = new Schema(
+  {
+    address: {
+      type: String,
+      required: false,
+    },
+    country: {
+      type: String,
+      required: false,
+    },
+    state: {
+      type: String,
+      required: false,
+    },
+    city: {
+      type: String,
+      required: false,
+    },
+    zipcode: {
+      type: String,
+      required: false,
+    },
+  },
+  { _id: false }
+);
+
 // Define the schema for preferences
 const PreferencesSchema = new Schema(
   {
@@ -157,6 +183,10 @@ const StudentInformationSchema = new Schema(
     residenceAddress: {
       type: ResidenceAddressSchema,
       required: false,
+    },
+    mailingAddress: {
+      type: MailingAddressSchema,
+      required: false
     },
     preferences: {
       type: PreferencesSchema,
