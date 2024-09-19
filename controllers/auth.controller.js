@@ -53,33 +53,29 @@ const registerStudent = asyncHandler(async (req, res) => {
     );
 });
 
-const registerAgent = asyncHandler(async (req, res) => {
-  const payload = req.body;
-  const validation = registerAgentSchema.safeParse(payload);
-  if (!validation.success) {
-    return res
-      .status(400)
-      .json(new ApiResponse(400, {}, validation.error.errors[0].message));
-  }
-  const findAgent = await Agent.findOne({
-    $or: [
-      { "founder.email": payload.founder.email },
-      { "primaryContact.email": payload.primaryContact.email },
-    ],
-  });
-  if (findAgent) {
-    return res
-      .status(409)
-      .json(new ApiResponse(409, {}, "Email is already in use"));
-  }
-   payload.password = await bcrypt.hash(payload.password, 10);
-  const agent = await Agent.create(payload);
-  const createdAgent = await Agent.findById(agent._id).select("-password");
+ const registerAgent = asyncHandler(async (req, res) => {
+  const { body: payload } = req;
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, createdAgent, "Agent registered successfully"));
+    // Validate the payload using Zod schema
+    const { success, error } = registerAgentSchema.safeParse(payload);
+    if (!success) return res.status(400).json(new ApiResponse(400, {}, error.errors));
+
+    // Check if founder/CEO's email is already registered
+    const isAgentExist = await Agent.exists({ "accountDetails.founderOrCeo.email": payload.accountDetails.founderOrCeo.email });
+    if (isAgentExist) return res.status(409).json(new ApiResponse(409, {}, "Email is already in use"));
+
+    // Prepare the agent data for saving
+    const { companyDetails, accountDetails, password } = payload;
+    const agentData = { companyDetails, accountDetails, password };
+
+    // Create and save the agent, then fetch without the password
+    const agent = new Agent(agentData);
+    await agent.save();
+    const createdAgent = await Agent.findById(agent._id).select("-password");
+
+    return res.status(201).json(new ApiResponse(201, createdAgent, "Agent registered successfully"));
 });
+
 
 const login = asyncHandler(async (req, res) => {
   const payload = req.body;

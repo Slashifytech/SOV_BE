@@ -15,30 +15,33 @@ export const registerStudentSchema = z.object({
 });
 
 export const registerAgentSchema = z.object({
-  type: z.string().min(1, "Agent type is required"),
-  company: z.object({
-    legalName: z.string().min(1, "Legal company name is required"),
+  companyDetails: z.object({
+    companyName: z.string().min(1, "Company Name is required"),
     tradeName: z.string().optional(),
-  }),
-  address: z.object({
+    address: z.string().min(1, "Address is required"),
     country: z.string().min(1, "Country is required"),
-    state: z.string().min(1, "State is required"),
+    province: z.string().min(1, "Province/State is required"),
     city: z.string().min(1, "City is required"),
-    zipCode: z.number().int().min(1000, "Invalid zip code"),
-    fullAddress: z.string().min(1, "Full address is required"),
+    postalCode: z.string().min(1, "Postal Code is required"),
   }),
-  founder: z.object({
-    email: z.string().email("Enter a valid email address"),
-    phone: z.string().min(1, "Phone number is required"),
+  accountDetails: z.object({
+    founderOrCeo: z.object({
+      email: z.string().email("Invalid email").min(1, "Email of Founder/CEO is required"),
+      phone: z.string().min(1, "Phone of Founder/CEO is required"),
+    }),
+    primaryContactPerson: z.object({
+      name: z.string().min(1, "Primary Contact Person Name is required"),
+      email: z.string().email("Invalid email").min(1, "Primary Contact Person Email is required"),
+      phone: z.string().min(1, "Primary Contact Person Phone is required"),
+    }),
+    msaID: z.object({
+      email: z.string().email("Invalid email").optional(),
+      phone: z.string().optional(),
+    }).optional(),
+    referralSource: z.string().optional(),
   }),
-  primaryContact: z.object({
-    name: z.string().min(1, "Primary contact name is required"),
-    email: z.string().email("Enter a valid email address"),
-    phone: z.string().min(1, "Primary contact phone number is required"),
-  }),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
+  password: z.string().min(1, "Password is required"),
 });
-
 export const loginSchema = z.object({
   role: z.string().min(1, "Enter the type"),
   email: z

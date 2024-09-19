@@ -1,121 +1,112 @@
 import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
 
-// Define the schema for the company subdocument
-const CompanySchema = new Schema(
-  {
-    legalName: {
-      type: String,
-      required: false, // Optional field
-    },
-    tradeName: {
-      type: String,
-      required: false, // Optional field
-    },
-  },
-  { _id: false }
-);
+dotenv.config();
 
-// Define the schema for the address subdocument
-const AddressSchema = new Schema(
-  {
-    country: {
-      type: String,
-      required: false, // Optional field
-    },
-    state: {
-      type: String,
-      required: false, // Optional field
-    },
-    city: {
-      type: String,
-      required: false, // Optional field
-    },
-    zipCode: {
-      type: Number,
-      required: false, // Optional field
-    },
-    fullAddress: {
-      type: String,
-      required: false, // Optional field
-    },
-  },
-  { _id: false }
-);
 
-// Define the schema for the founder subdocument
-const FounderSchema = new Schema(
+// Agent schema for agent sign-up
+const agentSchema = new Schema(
   {
-    email: {
-      type: String,
-      required: false, // Optional field
+    companyDetails: {
+      companyName: {
+        type: String,
+        required: [true, "Company Name is required"],
+      },
+      tradeName: {
+        type: String,
+      },
+      address: {
+        type: String,
+        required: [true, "Address is required"],
+      },
+      country: {
+        type: String,
+        required: [true, "Country is required"],
+      },
+      province: {
+        type: String,
+        required: [true, "Province/State is required"],
+      },
+      city: {
+        type: String,
+        required: [true, "City is required"],
+      },
+      postalCode: {
+        type: String,
+        required: [true, "Postal Code is required"],
+      },
     },
-    phone: {
-      type: String,
-      required: false, // Optional field
-    },
-  },
-  { _id: false }
-);
-
-// Define the schema for the primary contact subdocument
-const PrimaryContactSchema = new Schema(
-  {
-    name: {
-      type: String,
-      required: false, // Optional field
-    },
-    email: {
-      type: String,
-      required: false, // Optional field
-    },
-    phone: {
-      type: String,
-      required: false, // Optional field
-    },
-  },
-  { _id: false }
-);
-
-// Define the main schema for the agent
-const AgentSchema = new Schema(
-  {
-    type: {
-      type: String,
-      required: false, // Optional field
-    },
-    company: {
-      type: CompanySchema,
-      required: false, // Optional subdocument
-    },
-    address: {
-      type: AddressSchema,
-      required: false, // Optional subdocument
-    },
-    founder: {
-      type: FounderSchema,
-      required: false, // Optional subdocument
-    },
-    primaryContact: {
-      type: PrimaryContactSchema,
-      required: false, // Optional subdocument
+    accountDetails: {
+      founderOrCeo: {
+        email: {
+          type: String,
+          required: [true, "Email of Founder/CEO is required"],
+          trim: true,
+        },
+        phone: {
+          type: String,
+          required: [true, "Phone of Founder/CEO is required"],
+        },
+      },
+      primaryContactPerson: {
+        name: {
+          type: String,
+          required: [true, "Primary Contact Person Name is required"],
+        },
+        email: {
+          type: String,
+          required: [true, "Primary Contact Person Email is required"],
+          trim: true,
+        },
+        phone: {
+          type: String,
+          required: [true, "Primary Contact Person Phone is required"],
+        },
+      },
+      msaID: {
+        email: {
+          type: String,
+          required: false,
+          trim: true,
+        },
+        phone: {
+          type: String,
+          required:false
+        },
+      },
+      referralSource: {
+        type: String,
+      },
     },
     password: {
       type: String,
-      required: false, // Optional field
-    },
-    role: {
-      type: String,
-      default: "AGENT",
+      required: [true, "Password is required"],
     },
     approved: {
       type: Boolean,
       default: false,
     },
+    role: {
+      type: String,
+      default: '0' // [0-agent, 1-admin, 2-subAdmin]
+    }
   },
   {
-    timestamps: true, // Keep timestamps optional, these are generated automatically
+    timestamps: true,  // Automatically add createdAt and updatedAt fields
   }
 );
 
-// Create and export the Agent model
-export const Agent = mongoose.model("Agent", AgentSchema);
+// Password encryption before saving the agent
+agentSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+// Password verification method
+agentSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
+
+export const Agent = mongoose.model("Agent", agentSchema);
