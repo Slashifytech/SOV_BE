@@ -220,8 +220,24 @@ const registerReferences = asyncHandler(async (req, res) => {
   
     return res.status(200).json(new ApiResponse(200, updatedCompany.references, "References updated successfully"));
   });
+
+  const getCompanyData = asyncHandler(async (req, res) => {
+    // Ensure the user role is 'AGENT'
+    if (req.user.role !== 'AGENT') {
+      return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
+    }
   
+    // Find the company associated with the agentId
+    const company = await Company.findOne({ agentId: req.user.id });
+    if (!company) {
+      return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
+    }
+  
+    // Return the company data (excluding the MongoDB ObjectId)
+    return res.status(200).json(new ApiResponse(200, company, "Company data fetched successfully"));
+  });
+  
+   
 
 
-
-export { registerCompany, registerCompanyContact, registerBankDetails, registerCompanyOverview, registerCompanyOperations, registerReferences };
+export { registerCompany, registerCompanyContact, registerBankDetails, registerCompanyOverview, registerCompanyOperations, registerReferences, getCompanyData };
