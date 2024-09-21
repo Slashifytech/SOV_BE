@@ -1,10 +1,8 @@
-const nodemailer = require("nodemailer");
-const dotenv = require("dotenv");
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
-// Load environment variables from .env file
-dotenv.config({
-  path: "./env", // Ensure the correct path to your .env file
-});
+// Load environment variables
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -16,26 +14,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmailVerification = async (email, password) => {
-  
+const sendEmailVerification = async () => {
+  // Debugging output
+  console.log("Sender Email:", process.env.SENDER_MAIL);
+  console.log("App Password:", process.env.APP_PASSWORD);
+
   const mailOptions = {
     from: {
-      name: "Project Managment",
+      name: "SOV",
       address: process.env.SENDER_MAIL,
-    }, // sender address
-    to: email, // recipient email address (can be Gmail or Mailinator)
-    subject: "Project Management Password", // Subject line
-    text: `password: ${password}`,
+    },
+    to: "arvindydv03@gmail.com",
+    subject: "Project Management Password",
+    text: `password: test`,
   };
 
   try {
     // Send the email
-    const mail = await transporter.sendMail(mailOptions, () => {
-      console.log("Mail sent successfully");
-    });
+    const mail = await transporter.sendMail(mailOptions);
+    console.log("Mail sent successfully:", mail);
   } catch (error) {
-    console.log(error);
+    console.error("Error sending email:", error);
   }
 };
 
-module.exports = { sendEmailVerification };
+sendEmailVerification();

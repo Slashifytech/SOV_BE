@@ -22,9 +22,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Import api routes
 import authRouter from "./routes/auth.routes.js";
 import studentInformationRouter from "./routes/studentInformation.routes.js";
+import companyRouter from "./routes/company.routes.js";
 
 // User routes
 app.use("/api/auth", authRouter);
 app.use("/api/studentinformation", studentInformationRouter);
+app.use("/api/company", companyRouter);
 
 export default app;
