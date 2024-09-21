@@ -1,7 +1,7 @@
 import { Company } from "../models/company.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema } from "../validators/company.validator.js";
+import { BankDetailsSchema, CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema } from "../validators/company.validator.js";
 
 
 //register company
@@ -13,9 +13,9 @@ const registerCompany = asyncHandler(async (req, res) => {
     if (!result.success) {
         return res.status(400).json(new ApiResponse(400, {}, result.error.errors));
     }
-
+     
     // Check if the user role is 'AGENT'
-    if (res.user.role !== 'AGENT') {
+    if (req.user.role !== '0') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register a company"));
     }
 
@@ -48,48 +48,59 @@ const registerCompany = asyncHandler(async (req, res) => {
 //register primary contacts 
 const registerCompanyContact = asyncHandler(async (req, res) => {
     const { body: payload } = req;
-
-    // Validate the primary contact payload using the PrimaryContactSchema
-    const result = PrimaryContactSchema.safeParse(payload.primaryContact);
+  
+    // Validate the entire payload using the CompanyContactSchema
+    const result = CompanyContactSchema.safeParse(payload);
     if (!result.success) {
-        return res.status(400).json(new ApiResponse(400, {}, result.error.errors));
+      return res.status(400).json(new ApiResponse(400, {}, result.error.errors));
     }
-
+  
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== 'AGENT') {
-        return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register a contact"));
+    if (req.user.role !== '0') {
+      return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register a contact"));
     }
-
+  
     // Check if the agent has a company associated with them
     const company = await Company.findOne({ agentId: req.user.id });
     if (!company) {
-        return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
+      return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
     }
-
-    // Check if a contact with the same email or mobile already exists
+  
+    // Check if a contact with the same email or mobile already exists in the primary contact
     const isContactExist = await Company.exists({
-        agentId: req.user.id,
-        $or: [
-            { 'primaryContact.emailUsername': payload.primaryContact.emailUsername },
-            { 'primaryContact.mobile': payload.primaryContact.mobile }
-        ]
+      agentId: req.user.id,
+      $or: [
+        { 'primaryContact.emailUsername': payload.primaryContact.emailUsername },
+        { 'primaryContact.mobile': payload.primaryContact.mobile }
+      ]
     });
-
+  
     if (isContactExist) {
-        return res.status(409).json(new ApiResponse(409, {}, "Contact with this email or mobile already exists"));
+      return res.status(409).json(new ApiResponse(409, {}, "Contact with this email or mobile already exists"));
     }
-
-    // Update the primary contact for the company
+  
+    // Update the company's contact details
     company.primaryContact = payload.primaryContact;
-
+    
+    // If commissionContact is provided, update it
+    if (payload.commissionContact) {
+      company.commissionContact = payload.commissionContact;
+    }
+    
+    // If admissionsContacts array is provided, update it
+    if (payload.admissionsContacts) {
+      company.admissionsContacts = payload.admissionsContacts;
+    }
+  
     // Save the updated company details
     await company.save();
-
-    // Retrieve and return the updated primary contact details
-    const updatedCompany = await Company.findById(company._id).select("primaryContact -_id");
-
-    return res.status(201).json(new ApiResponse(201, updatedCompany.primaryContact, "Primary contact registered successfully"));
-});
+  
+    // Retrieve and return the updated contact details
+    const updatedCompany = await Company.findById(company._id).select("primaryContact commissionContact admissionsContacts -_id");
+  
+    return res.status(201).json(new ApiResponse(201, updatedCompany, "Company contacts registered successfully"));
+  });
+  
 
 
 // Controller for registering bank details
@@ -103,7 +114,7 @@ const registerBankDetails = asyncHandler(async (req, res) => {
     }
 
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== 'AGENT') {
+    if (req.user.role !== '0') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register bank details"));
     }
 
@@ -135,7 +146,7 @@ const registerCompanyOverview = asyncHandler(async (req, res) => {
     }
 
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== 'AGENT') {
+    if (req.user.role !== '0') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update the company overview"));
     }
 
@@ -167,7 +178,7 @@ const registerCompanyOperations = asyncHandler(async (req, res) => {
     }
 
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== 'AGENT') {
+    if (req.user.role !== '0') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update company operations"));
     }
 
@@ -199,7 +210,7 @@ const registerReferences = asyncHandler(async (req, res) => {
     }
   
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== 'AGENT') {
+    if (req.user.role !== '0') {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
     }
   
@@ -223,7 +234,7 @@ const registerReferences = asyncHandler(async (req, res) => {
 
   const getCompanyData = asyncHandler(async (req, res) => {
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== 'AGENT') {
+    if (req.user.role !== '0') {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
     }
   

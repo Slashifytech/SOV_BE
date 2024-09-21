@@ -101,8 +101,8 @@ const login = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
   } else if (payload.role === "agent") {
-
-      user = await Agent.findOne({ "founder.email": payload.email });
+        
+    user = await Agent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
      
     if (!user || !user.approved) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
