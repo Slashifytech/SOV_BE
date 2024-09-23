@@ -8,7 +8,7 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
   try {
   
     const token =
-      req.cookies?.accessToken ||
+      // req.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer", "");
     
     if (!token) {
@@ -22,11 +22,11 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
       process.env.ACCESS_TOKEN_SECRET
     );
     let user;
-    if (decodeToken.role === "student") {
+    if (decodeToken.role === "3") {
       user = await Student.findById(decodeToken.id).select(
         "-password -refreshToken"
       );
-    } else if (decodeToken.role === "agent") {
+    } else if (decodeToken.role === "2") {
       user = await Agent.findById(decodeToken.id).select(
         "-password -refreshToken"
       );

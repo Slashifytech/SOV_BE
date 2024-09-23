@@ -23,10 +23,6 @@ const PersonalInformationSchema = new Schema(
       type: String,
       required: false,
     },
-    middleName: {
-      type: String,
-      required: false,
-    },
     lastName: {
       type: String,
       required: false,
@@ -170,7 +166,10 @@ const StudentInformationSchema = new Schema(
     studentId: {
       type: Schema.Types.ObjectId,
       ref: "Student",
-      required: true,
+    },
+    agentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Agent",
     },
     personalInformation: {
       type: PersonalInformationSchema,

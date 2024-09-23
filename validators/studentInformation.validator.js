@@ -1,10 +1,15 @@
 import { z } from "zod";
 
 // Define the main Zod schema for the student profile
-export const studentPersonalInformationSchema = z.object({
+const phoneSchema = z.object({
+  countryCode: z.string().nonempty("Country code is required"),
+  phone: z.string().nonempty("Phone number is required"),
+});
+
+// Schema for personal information
+export const personalInformationSchema = z.object({
   title: z.string().nonempty("Title is required"),
   firstName: z.string().nonempty("First Name is required"),
-  middleName: z.string().optional(),
   lastName: z.string().nonempty("Last Name is required"),
   gender: z.string().nonempty("Gender is required"),
   maritalStatus: z.string().nonempty("Marital Status is required"),
@@ -13,21 +18,27 @@ export const studentPersonalInformationSchema = z.object({
     .nonempty("Date of Birth is required")
     .transform((dateString) => new Date(dateString)),
   firstLanguage: z.string().nonempty("First Language is required"),
-   email:  z
-   .string()
-   .email("Enter a valid email address")
-   .nonempty("Email is required"),
-   countryCode: z.string().nonempty("Country code is required"),
-   phone: z.string().nonempty("Phone number is required"),
-  countryOfCitizenship: z
-    .string()
-    .nonempty("Country of Citizenship is required"),
+  email: z.string().email("Enter a valid email address").nonempty("Email is required"),
+  phone: phoneSchema,
+});
+
+// Schema for passport details
+export const passportDetailsSchema = z.object({
+  passportUpload: z.string().nonempty("Passport upload is required"),
+  countryOfCitizenship: z.string().nonempty("Country of Citizenship is required"),
   passportNumber: z.string().nonempty("Passport Number is required"),
   expireDate: z
     .string()
     .nonempty("Expire Date is required")
     .transform((dateString) => new Date(dateString)),
 });
+
+// Combined schema
+export const studentPersonalAndPassportSchema = z.object({
+  personalInformation: personalInformationSchema,
+  passportDetails: passportDetailsSchema,
+});
+
 
 export const studentResidenceAndAddressSchema = z.object({
   address: z.string().nonempty("Address is required"),

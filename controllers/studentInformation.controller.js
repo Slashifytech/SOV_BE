@@ -1,7 +1,7 @@
 import { StudentInformation } from "../models/studentInformation.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
-  studentPersonalInformationSchema,
+  studentPersonalAndPassportSchema,
   studentPreferencesSchema,
   studentResidenceAndAddressSchema,
 } from "../validators/studentInformation.validator.js";
@@ -11,59 +11,43 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
-  const payload = req.body;
+  const { body: payload } = req;
+
   // Validate payload using Zod
-  const validation = studentPersonalInformationSchema.safeParse(payload);
+  const validation = studentPersonalAndPassportSchema.safeParse(payload);
   if (!validation.success) {
-    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors[0].message));
+    const errorMessage = validation.error.errors[0].message;
+    return res.status(400).json(new ApiResponse(400, {}, errorMessage));
   }
 
-  // Ensure the file is uploaded
-  const passportFile = req.file?.path;
-  
-  if (!passportFile) {
-    return res.status(400).json(new ApiResponse(400, {}, "Passport is missing"));
+  const { personalInformation, passportDetails } = validation.data;
+
+  // Determine the ID based on the user role
+  let idField = 'studentId'; // Default to studentId
+  if (req.user.role === '3') {
+    idField = 'agentId';
+  } else if (req.user.role === '2') {
+    idField = 'studentId';
   }
 
-  // Upload the passport to Cloudinary
-  const passport = await uploadOnCloudinary(passportFile);
-  if (!passport) {
-    return res.status(400).json(new ApiResponse(400, {}, "Failed to upload passport"));
-  }
-
-  // Construct the student data object
-  const personalInformationData = {
-    title: payload.title,
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    gender: payload.gender,
-    maritalStatus: payload.maritalStatus,
-    dob: payload.dob,
-     
-    firstLanguage: payload.firstLanguage,
-     email: payload.email,
-     phone:{
-      countryCode: payload.countryCode,
-       phone: payload.phone,
-     }
-  }
+  // Create data to save, dynamically setting either studentId or agentId
   const data = {
-    personalInformation: personalInformationData,
-    passportDetails: {
-      passportUpload: passport.url,
-      ...payload
+    personalInformation: {
+      ...personalInformation,
+      phone: { ...personalInformation.phone },
     },
-    studentId: req.user.id,
-    pageCount: 1
+    passportDetails: {
+      ...passportDetails,
+    },
+    [idField]: req.user.id, // Dynamically assign either studentId or agentId
+    pageCount: 1,
   };
 
-  // Save personal information
-  const studentPersonalInformation = await StudentInformation.create(data);
+  // Save the student information
+  const studentInfo = await StudentInformation.create(data);
 
   // Respond with success
-  return res
-    .status(201)
-    .json(new ApiResponse(201, studentPersonalInformation, "Personal Information saved successfully"));
+  return res.status(201).json(new ApiResponse(201, studentInfo, "Personal Information saved successfully"));
 });
 
 
@@ -165,6 +149,60 @@ const getAllStudents = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, allStudents, "data get successfully"));
 });
 
+const updateStudentPersonalInformation = asyncHandler(async (req, res) => {
+  const payload = req.body;
+  // Validate payload using Zod
+  const validation = studentPersonalInformationSchema.safeParse(payload);
+  if (!validation.success) {
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors[0].message));
+  }
+
+  // Ensure the file is uploaded
+  const passportFile = req.file?.path;
+  
+  if (!passportFile) {
+    return res.status(400).json(new ApiResponse(400, {}, "Passport is missing"));
+  }
+
+  // Upload the passport to Cloudinary
+  const passport = await uploadOnCloudinary(passportFile);
+  if (!passport) {
+    return res.status(400).json(new ApiResponse(400, {}, "Failed to upload passport"));
+  }
+
+  // Construct the student data object
+  const personalInformationData = {
+    title: payload.title,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    gender: payload.gender,
+    maritalStatus: payload.maritalStatus,
+    dob: payload.dob,
+     
+    firstLanguage: payload.firstLanguage,
+     email: payload.email,
+     phone:{
+      countryCode: payload.countryCode,
+       phone: payload.phone,
+     }
+  }
+  const data = {
+    personalInformation: personalInformationData,
+    passportDetails: {
+      passportUpload: passport.url,
+      ...payload
+    },
+  };
+
+  // Save personal information
+  const studentPersonalInformation = await StudentInformation.create(data);
+
+  // Respond with success
+  return res
+    .status(201)
+    .json(new ApiResponse(201, studentPersonalInformation, "Personal Information saved successfully"));
+});
+
 export {
   studentPersonalInformation,
   studentResidenceAndAddress,
@@ -172,4 +210,5 @@ export {
   getStudentPersonalInformation,
   getStudentDetails,
   getAllStudents,
+  updateStudentPersonalInformation
 };

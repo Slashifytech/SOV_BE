@@ -88,7 +88,7 @@ const login = asyncHandler(async (req, res) => {
 
   let user;
   let loggedInUser;
-  if (payload.role === "student") {
+  if (payload.role === "3") {
     user = await Student.findOne({ email: payload.email });
     if (!user || !user.approved ) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
@@ -100,7 +100,7 @@ const login = asyncHandler(async (req, res) => {
     loggedInUser = await Student.findById(user._id).select(
       "-password -refreshToken"
     );
-  } else if (payload.role === "agent") {
+  } else if (payload.role === "2") {
         
     user = await Agent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
      

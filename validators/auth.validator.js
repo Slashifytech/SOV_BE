@@ -42,6 +42,8 @@ export const registerAgentSchema = z.object({
   }),
   password: z.string().min(1, "Password is required"),
 });
+
+
 export const loginSchema = z.object({
   role: z.string().min(1, "Enter the type"),
   email: z

@@ -13,8 +13,7 @@ const router = Router();
 
 router.route("/personal-information")
   .post(
-    verifyJwt, 
-    upload.single("passport"),  // Make sure the field name matches your form's file input name
+    verifyJwt, // Make sure the field name matches your form's file input name
     studentPersonalInformation
   );
 router.route("/residance-address").post(verifyJwt, studentResidenceAndAddress);
