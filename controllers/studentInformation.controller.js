@@ -17,28 +17,26 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
   const validation = studentPersonalAndPassportSchema.safeParse(payload);
   if (!validation.success) {
     const errorMessage = validation.error.errors[0].message;
-    return res.status(400).json(new ApiResponse(400, {}, errorMessage));
+    return res.status(400).json(new ApiResponse(400, {}, `Validation Error: ${errorMessage}`));
   }
 
   const { personalInformation, passportDetails } = validation.data;
+  const idField = req.user.role === '3' ? 'agentId' : 'studentId';
 
-  // Check if email, phone, or passport number already exists
+  // Check if email, phone, and passport number already exist
   const existingRecord = await StudentInformation.findOne({
-    $or: [
+    $and: [
       { "personalInformation.email": personalInformation.email },
       { "personalInformation.phone.phone": personalInformation.phone.phone },
       { "passportDetails.passportNumber": passportDetails.passportNumber }
     ]
-  });
-
-  if (existingRecord) {
-    return res.status(400).json(new ApiResponse(400, {}, "Email, phone, or passport number already exists"));
+  });   
+  // If record exists but is associated with another user, deny access
+  if (existingRecord && existingRecord[idField].toString() !== req.user.id) {
+    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: You are not allowed to update this record"));
   }
 
-  // Determine the ID based on the user role
-  const idField = req.user.role === '3' ? 'agentId' : 'studentId';
-
-  // Create data to save, dynamically setting either studentId or agentId
+  // Prepare data to save or update
   const data = {
     personalInformation: {
       ...personalInformation,
@@ -51,13 +49,21 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
     pageCount: 1,
   };
 
-  // Save the student information
-  const studentInfo = await StudentInformation.create(data);
+  if (existingRecord) {
+    // Update the existing record
+    const updatedRecord = await StudentInformation.findOneAndUpdate(
+      { _id: existingRecord._id },
+      { $set: data },
+      { new: true }
+    );
 
-  // Respond with success
-  return res.status(201).json(new ApiResponse(201, studentInfo, "Personal Information saved successfully"));
+    return res.status(200).json(new ApiResponse(200, updatedRecord, "Personal Information updated successfully"));
+  } else {
+    // Save new student information
+    const studentInfo = await StudentInformation.create(data);
+    return res.status(201).json(new ApiResponse(201, studentInfo, "Personal Information saved successfully"));
+  }
 });
-
 
 
 const studentResidenceAndAddress = asyncHandler(async (req, res) => {
