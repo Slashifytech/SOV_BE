@@ -16,8 +16,8 @@ router.route("/personal-information")
     verifyJwt, // Make sure the field name matches your form's file input name
     studentPersonalInformation
   );
-router.route("/residance-address").post(verifyJwt, studentResidenceAndAddress);
-router.route("/prefrence").post(verifyJwt, studentPreference);
+router.route("/residence-address/:formId").patch(verifyJwt, studentResidenceAndAddress);
+router.route("/preference/:formId").patch(verifyJwt, studentPreference);
 router
   .route("/personal-information/:studentId")
   .get(verifyJwt, getStudentPersonalInformation);

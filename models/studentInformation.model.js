@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-
+// Define the schema for phone
 const PhoneSchema = new Schema({
   countryCode: {
     type: String,
@@ -8,9 +8,10 @@ const PhoneSchema = new Schema({
   },
   phone: {
     type: String,
-    required: true
+    required: true,
+    unique: true // Ensure phone is unique
   }
-})
+});
 
 // Define the schema for personal information
 const PersonalInformationSchema = new Schema(
@@ -46,13 +47,12 @@ const PersonalInformationSchema = new Schema(
     email: {
       type: String,
       required: false,
-      unique: true,
+      unique: true, // Ensure email is unique
     },
     phone: {
       type: PhoneSchema,
       required: false
     },
-    
   },
   { _id: false }
 );
@@ -71,6 +71,7 @@ const PassportDetailsSchema = new Schema(
     passportNumber: {
       type: String,
       required: false,
+      unique: true, // Ensure passport number is unique
     },
     expireDate: {
       type: Date,
@@ -193,7 +194,7 @@ const StudentInformationSchema = new Schema(
     },
     pageCount: {
       type: Number,
-      default:1
+      default: 1
     }
   },
   {

@@ -22,13 +22,21 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
   const { personalInformation, passportDetails } = validation.data;
 
-  // Determine the ID based on the user role
-  let idField = 'studentId'; // Default to studentId
-  if (req.user.role === '3') {
-    idField = 'agentId';
-  } else if (req.user.role === '2') {
-    idField = 'studentId';
+  // Check if email, phone, or passport number already exists
+  const existingRecord = await StudentInformation.findOne({
+    $or: [
+      { "personalInformation.email": personalInformation.email },
+      { "personalInformation.phone.phone": personalInformation.phone.phone },
+      { "passportDetails.passportNumber": passportDetails.passportNumber }
+    ]
+  });
+
+  if (existingRecord) {
+    return res.status(400).json(new ApiResponse(400, {}, "Email, phone, or passport number already exists"));
   }
+
+  // Determine the ID based on the user role
+  const idField = req.user.role === '3' ? 'agentId' : 'studentId';
 
   // Create data to save, dynamically setting either studentId or agentId
   const data = {
@@ -54,6 +62,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
 const studentResidenceAndAddress = asyncHandler(async (req, res) => {
   const payload = req.body;
+  const {formId} = req.params;
   const validation = studentResidenceAndAddressSchema.safeParse(payload);
   if (!validation.success) {
     return res
@@ -62,7 +71,7 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
   }
 
   await StudentInformation.findOneAndUpdate(
-    { studentId: req.user.id },
+    { _id: formId  },
     {
       $set: {
         residenceAddress: {
@@ -85,6 +94,8 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
 
 const studentPreference = asyncHandler(async (req, res) => {
   const payload = req.body;
+  const {formId} = req.params;
+
   const validation = studentPreferencesSchema.safeParse(payload);
   if (!validation.success) {
     return res
@@ -93,7 +104,7 @@ const studentPreference = asyncHandler(async (req, res) => {
   }
 
   await StudentInformation.findOneAndUpdate(
-    { studentId: req.user.id },
+    { _id: formId },
     {
       $set: {
         preferences: {
