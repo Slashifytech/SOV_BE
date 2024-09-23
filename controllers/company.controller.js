@@ -15,7 +15,7 @@ const registerCompany = asyncHandler(async (req, res) => {
     }
      
     // Check if the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register a company"));
     }
 
@@ -56,7 +56,7 @@ const registerCompanyContact = asyncHandler(async (req, res) => {
     }
   
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register a contact"));
     }
   
@@ -114,7 +114,7 @@ const registerBankDetails = asyncHandler(async (req, res) => {
     }
 
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to register bank details"));
     }
 
@@ -146,7 +146,7 @@ const registerCompanyOverview = asyncHandler(async (req, res) => {
     }
 
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update the company overview"));
     }
 
@@ -178,7 +178,7 @@ const registerCompanyOperations = asyncHandler(async (req, res) => {
     }
 
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update company operations"));
     }
 
@@ -210,7 +210,7 @@ const registerReferences = asyncHandler(async (req, res) => {
     }
   
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
     }
   
@@ -234,7 +234,7 @@ const registerReferences = asyncHandler(async (req, res) => {
 
   const getCompanyData = asyncHandler(async (req, res) => {
     // Ensure the user role is 'AGENT'
-    if (req.user.role !== '0') {
+    if (req.user.role !== '2') {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
     }
   

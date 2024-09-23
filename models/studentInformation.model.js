@@ -192,6 +192,10 @@ const StudentInformationSchema = new Schema(
       type: PreferencesSchema,
       required: false,
     },
+    pageCount: {
+      type: Number,
+      default:1
+    }
   },
   {
     timestamps: true,

@@ -20,7 +20,7 @@ router.route("/personal-information")
 router.route("/residance-address").post(verifyJwt, studentResidenceAndAddress);
 router.route("/prefrence").post(verifyJwt, studentPreference);
 router
-  .route("/persional-information")
+  .route("/personal-information/:studentId")
   .get(verifyJwt, getStudentPersonalInformation);
 router.route("/details").get(verifyJwt, getStudentDetails);
 router.route("/all-students").get(verifyAdmin, getAllStudents);

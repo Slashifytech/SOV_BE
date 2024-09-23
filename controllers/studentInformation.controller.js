@@ -54,6 +54,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
       ...payload
     },
     studentId: req.user.id,
+    pageCount: 1
   };
 
   // Save personal information
@@ -87,6 +88,7 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
           city: payload.city,
           zipcode: payload.zipcode,
         },
+        pageCount: 2
       },
     },
     { new: true }
@@ -117,6 +119,7 @@ const studentPreference = asyncHandler(async (req, res) => {
           preferredLevelOfEducation: payload.preferredLevelOfEducation,
           preferredInstitution: payload.preferredInstitution,
         },
+        pageCount: 3
       },
     },
     { new: true }
@@ -128,9 +131,17 @@ const studentPreference = asyncHandler(async (req, res) => {
 });
 
 const getStudentPersonalInformation = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
   const studentPersonalInformation = await StudentInformation.findOne({
-    studentId: req.user.id,
+    studentId: studentId,
   });
+   
+  if(!studentPersonalInformation){
+    return res.status(404).json(
+      new ApiResponse(404, {}, "Student not found")
+    )
+  }
+
   return res
     .status(200)
     .json(

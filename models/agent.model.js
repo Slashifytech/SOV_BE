@@ -89,7 +89,7 @@ const agentSchema = new Schema(
     },
     role: {
       type: String,
-      default: '0' // [0-agent, 1-admin, 2-subAdmin]
+      default: '2' // [0-admin, 1-subAdmin, 2-agent]
     }
   },
   {
