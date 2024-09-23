@@ -3,7 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   studentPersonalAndPassportSchema,
   studentPreferencesSchema,
-  studentResidenceAndAddressSchema,
+  studentResidenceAndMailingAddressSchema,
 } from "../validators/studentInformation.validator.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
@@ -62,34 +62,50 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
 const studentResidenceAndAddress = asyncHandler(async (req, res) => {
   const payload = req.body;
-  const {formId} = req.params;
-  const validation = studentResidenceAndAddressSchema.safeParse(payload);
+  const { formId } = req.params;
+
+  // Validate the payload against the Zod schema
+  const validation = studentResidenceAndMailingAddressSchema.safeParse(payload);
   if (!validation.success) {
     return res
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
 
-  await StudentInformation.findOneAndUpdate(
-    { _id: formId  },
-    {
-      $set: {
-        residenceAddress: {
-          address: payload.address,
-          country: payload.country,
-          state: payload.state,
-          city: payload.city,
-          zipcode: payload.zipcode,
-        },
-        pageCount: 2
-      },
+  // Prepare the update object based on the validated payload
+  const updateData = {
+    residenceAddress: {
+      address: payload.residenceAddress?.address,
+      country: payload.residenceAddress?.country,
+      state: payload.residenceAddress?.state,
+      city: payload.residenceAddress?.city,
+      zipcode: payload.residenceAddress?.zipcode,
     },
+    mailingAddress: {
+      address: payload.mailingAddress?.address,
+      country: payload.mailingAddress?.country,
+      state: payload.mailingAddress?.state,
+      city: payload.mailingAddress?.city,
+      zipcode: payload.mailingAddress?.zipcode,
+    },
+    pageCount: 2,
+  };
+
+  // Update the StudentInformation document
+  const updatedStudentInfo = await StudentInformation.findOneAndUpdate(
+    { _id: formId },
+    { $set: updateData },
     { new: true }
   );
 
+  // Check if the document was found and updated
+  if (!updatedStudentInfo) {
+    return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+  }
+
   return res
-    .status(201)
-    .json(new ApiResponse(201, {}, "data saved successfully"));
+    .status(200)
+    .json(new ApiResponse(200, updatedStudentInfo, "Data saved successfully"));
 });
 
 const studentPreference = asyncHandler(async (req, res) => {

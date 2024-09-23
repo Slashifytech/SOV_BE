@@ -40,12 +40,27 @@ export const studentPersonalAndPassportSchema = z.object({
 });
 
 
-export const studentResidenceAndAddressSchema = z.object({
+export const residenceAddressSchema = z.object({
   address: z.string().nonempty("Address is required"),
   country: z.string().nonempty("Country is required"),
   state: z.string().nonempty("State is required"),
   city: z.string().nonempty("City is required"),
   zipcode: z.string().nonempty("Zip Code is required"),
+});
+
+// Schema for mailing address
+export const mailingAddressSchema = z.object({
+  address: z.string().nonempty("Address is required"),
+  country: z.string().nonempty("Country is required"),
+  state: z.string().nonempty("State is required"),
+  city: z.string().nonempty("City is required"),
+  zipcode: z.string().nonempty("Zip Code is required"),
+});
+
+// Combined schema for residence and mailing addresses
+export const studentResidenceAndMailingAddressSchema = z.object({
+  residenceAddress: residenceAddressSchema,
+  mailingAddress: mailingAddressSchema,
 });
 
 // Define the Zod schema for preferences
