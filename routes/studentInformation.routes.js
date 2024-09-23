@@ -1,8 +1,8 @@
 import { Router } from "express";
 import {
   getAllAgentStudent,
-  getAllStudents,
-  getStudentDetails,
+  // getAllStudents,
+  // getStudentDetails,
   getStudentFormById,
   getStudentPersonalInformation,
   studentPersonalInformation,
@@ -24,8 +24,8 @@ router.route("/preference/:formId").patch(verifyJwt, studentPreference);
 router
   .route("/personal-information/:studentId")
   .get(verifyJwt, getStudentPersonalInformation);
-router.route("/details").get(verifyJwt, getStudentDetails);
-router.route("/all-students").get(verifyAdmin, getAllStudents);
+// router.route("/details").get(verifyJwt, getStudentDetails);
+// router.route("/all-students").get(verifyAdmin, getAllStudents);
 router.route("/personal-information/:formId")
   .patch(
     verifyJwt,

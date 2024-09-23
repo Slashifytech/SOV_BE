@@ -226,21 +226,24 @@ const getAllAgentStudent = asyncHandler(async(req, res)=>{
     .json(new ApiResponse(200, { students: allStudents, pagination }, "Students fetched successfully"));
 });
 
-const getStudentFormById = asyncHandler(async(req, res)=>{
-  const {formId} = red.params;
-  
-  const studentInformation = await  StudentInformation.find({ _id: formId });
-  if(!studentInformation){
-    res.status(404).json(
-      new ApiResponse(404, {}, "Student information not found")
-    )
+const getStudentFormById = asyncHandler(async (req, res) => {
+  const { formId } = req.params;
+
+  // Fetch student information by formId
+  const studentInformation = await StudentInformation.findById(formId);
+
+  // If student information is not found, return 404
+  if (!studentInformation) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, {}, "Student information not found"));
   }
 
-  return res.status(200).json(
-    new ApiResponse(200, studentInformation, "Student information get successfully")
-  )
-
-})
+  // Respond with success if student information is found
+  return res
+    .status(200)
+    .json(new ApiResponse(200, studentInformation, "Student information retrieved successfully"));
+});
 
 
 
@@ -249,8 +252,8 @@ export {
   studentResidenceAndAddress,
   studentPreference,
   getStudentPersonalInformation,
-  getStudentDetails,
-  getAllStudents,
+  // getStudentDetails,
+  // getAllStudents,
   updateStudentPersonalInformation,
   getAllAgentStudent,
   getStudentFormById
