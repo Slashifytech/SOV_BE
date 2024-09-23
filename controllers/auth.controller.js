@@ -169,7 +169,7 @@ const changePassword = asyncHandler(async (req, res) => {
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
   let user;
-  if(req.user.role === "STUDENT"){
+  if(req.user.role === '3'){
     user = await Student.findOne({ _id: req.user.id });
     if (!user || !user.approved ) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
@@ -184,7 +184,7 @@ const changePassword = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
-  } else if(req.user.role === "AGENT"){
+  } else if(req.user.role === '2'){
     user = await Agent.findOne({_id: req.user.id});
      
     if (!user || !user.approved) {
