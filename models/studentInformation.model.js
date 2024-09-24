@@ -37,7 +37,7 @@ const PersonalInformationSchema = new Schema(
       required: false,
     },
     dob: {
-      type: Date,
+      type: String,
       required: false,
     },
     firstLanguage: {
@@ -47,7 +47,6 @@ const PersonalInformationSchema = new Schema(
     email: {
       type: String,
       required: false,
-      unique: true, // Ensure email is unique
     },
     phone: {
       type: PhoneSchema,
@@ -74,7 +73,7 @@ const PassportDetailsSchema = new Schema(
       unique: true, // Ensure passport number is unique
     },
     expireDate: {
-      type: Date,
+      type: String,
       required: false,
     },
   },

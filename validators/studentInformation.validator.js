@@ -15,8 +15,8 @@ export const personalInformationSchema = z.object({
   maritalStatus: z.string().nonempty("Marital Status is required"),
   dob: z
     .string()
-    .nonempty("Date of Birth is required")
-    .transform((dateString) => new Date(dateString)),
+    .nonempty("Date of Birth is required"),
+    
   firstLanguage: z.string().nonempty("First Language is required"),
   email: z.string().email("Enter a valid email address").nonempty("Email is required"),
   phone: phoneSchema,
@@ -30,7 +30,6 @@ export const passportDetailsSchema = z.object({
   expireDate: z
     .string()
     .nonempty("Expire Date is required")
-    .transform((dateString) => new Date(dateString)),
 });
 
 // Combined schema
