@@ -64,17 +64,6 @@ const agentSchema = new Schema(
           required: [true, "Primary Contact Person Phone is required"],
         },
       },
-      msaID: {
-        email: {
-          type: String,
-          required: false,
-          trim: true,
-        },
-        phone: {
-          type: String,
-          required:false
-        },
-      },
       referralSource: {
         type: String,
       },

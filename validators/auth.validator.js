@@ -34,10 +34,6 @@ export const registerAgentSchema = z.object({
       email: z.string().email("Invalid email").min(1, "Primary Contact Person Email is required"),
       phone: z.string().min(1, "Primary Contact Person Phone is required"),
     }),
-    msaID: z.object({
-      email: z.string().email("Invalid email").optional(),
-      phone: z.string().optional(),
-    }).optional(),
     referralSource: z.string().optional(),
   }),
   password: z.string().min(1, "Password is required"),
