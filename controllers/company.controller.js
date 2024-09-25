@@ -66,19 +66,6 @@ const registerCompanyContact = asyncHandler(async (req, res) => {
       return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
     }
   
-    // Check if a contact with the same email or mobile already exists in the primary contact
-    const isContactExist = await Company.exists({
-      agentId: req.user.id,
-      $or: [
-        { 'primaryContact.emailUsername': payload.primaryContact.emailUsername },
-        { 'primaryContact.mobile': payload.primaryContact.mobile }
-      ]
-    });
-  
-    if (isContactExist) {
-      return res.status(409).json(new ApiResponse(409, {}, "Contact with this email or mobile already exists"));
-    }
-  
     // Update the company's contact details
     company.primaryContact = payload.primaryContact;
     
