@@ -1,8 +1,8 @@
 import { Company } from "../models/company.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { BankDetailsSchema, CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema } from "../validators/company.validator.js";
-
+import { BankDetailsSchema, CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema, ReferenceSchema } from "../validators/company.validator.js";
+import { z } from 'zod';
 
 //register company
 const registerCompany = asyncHandler(async (req, res) => {
@@ -188,36 +188,36 @@ const registerCompanyOperations = asyncHandler(async (req, res) => {
 });
 
 const registerReferences = asyncHandler(async (req, res) => {
-    const { body: payload } = req;
-  
-    // Validate the payload using ReferenceSchema
-    const result = z.array(ReferenceSchema).safeParse(payload);
-    if (!result.success) {
-      return res.status(400).json(new ApiResponse(400, {}, result.error.errors));
-    }
-  
-    // Ensure the user role is 'AGENT'
-    if (req.user.role !== '2') {
-      return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
-    }
-  
-    // Find the company associated with the agentId
-    const company = await Company.findOne({ agentId: req.user.id });
-    if (!company) {
-      return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
-    }
-  
-    // Update the references for the company
-    company.references = payload;
-  
-    // Save the updated company details
-    await company.save();
-  
-    // Retrieve and return the updated references
-    const updatedCompany = await Company.findById(company._id).select("references -_id");
-  
-    return res.status(200).json(new ApiResponse(200, updatedCompany.references, "References updated successfully"));
-  });
+  const { body: payload } = req;
+
+  // Validate the payload using Zod
+  const result = z.array(ReferenceSchema).safeParse(payload);
+  if (!result.success) {
+    return res.status(400).json(new ApiResponse(400, {}, result.error.errors));
+  }
+
+  // Ensure the user role is 'AGENT' (role '2')
+  if (req.user.role !== '2') {
+    return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
+  }
+
+  // Find the company associated with the agentId
+  const company = await Company.findOne({ agentId: req.user.id });
+  if (!company) {
+    return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
+  }
+
+  // Update the references for the company
+  company.references = result.data;
+
+  // Save the updated company details
+  await company.save();
+
+  // Retrieve the updated references (only the references field, excluding `_id`)
+  const updatedCompany = await Company.findById(company._id).select("references -_id");
+
+  return res.status(200).json(new ApiResponse(200, updatedCompany.references, "References updated successfully"));
+});
 
   const getCompanyData = asyncHandler(async (req, res) => {
     // Ensure the user role is 'AGENT'

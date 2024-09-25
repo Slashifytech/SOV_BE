@@ -92,7 +92,7 @@ const CompanyOperationsSchema = z.object({
 });
 
 // Reference Schema
-const ReferenceSchema = z.object({
+   const ReferenceSchema = z.object({
   referenceType: z.string().min(1, { message: "Reference Type is required" }),
   contactPerson: z.string().min(1, { message: "Contact Person is required" }),
   institutionName: z.string().min(1, { message: "Institution Name is required" }),
@@ -101,6 +101,7 @@ const ReferenceSchema = z.object({
   contactNumber: z.string().min(1, { message: "Contact Number is required" }),
   email: z.string().email({ message: "Valid Email is required" }),
 });
+
 
 export {
   CompanyDetailsSchema,
