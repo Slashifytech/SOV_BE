@@ -24,11 +24,13 @@ import authRouter from "./routes/auth.routes.js";
 import studentInformationRouter from "./routes/studentInformation.routes.js";
 import companyRouter from "./routes/company.routes.js";
 import countryRouter from "./routes/country.routes.js";
+import instituteRouter from "./routes/institute.routes.js";
 
 // User routes
 app.use("/api/auth", authRouter);
 app.use("/api/studentinformation", studentInformationRouter);
 app.use("/api/company", companyRouter);
 app.use("/api/country", countryRouter);
+app.use("/api/institute", instituteRouter);
 
 export default app;
