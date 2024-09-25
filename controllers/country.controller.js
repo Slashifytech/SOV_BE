@@ -1,4 +1,4 @@
-import { Country } from "../models/country.model.js";
+import { CountryList } from "../models/country.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const getAllCountries = asyncHandler(async (req, res) => {
 
     // Fetch all countries from the database
-    const countries = await Country.find({});
+    const countries = await CountryList.find({});
   
     // Check if countries exist
     if (!countries || countries.length === 0) {

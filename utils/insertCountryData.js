@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { Country } from "../models/country.model.js"; // Adjust the import path if necessary
 import connectDb from "../db/index.js";
+import { CountryList } from "../models/country.model.js";
 
 // Sample country data as an array
-const countryData = [
+const allCountry = [
   "Afghanistan",
   "Aland Islands",
   "Albania",
@@ -256,20 +256,31 @@ const countryData = [
   "Zimbabwe"
 ];
 
+const preferredCountry = [
+  "UK", "USA", "Canada", "Australia", "New Zealand", "Ireland", "Italy", 
+  "France", "Germany", "Switzerland", "Malta", "Latvia", "Luxembourg", 
+  "Spain", "Romania", "Hungary", // Corrected typo from "Hungry"
+  "Finland", "Denmark", "Norway", "Netherlands",
+];
+
 // Async IIFE to insert countries into the database
 (async () => {
   try {
     // Connect to the database
     await connectDb();
 
-    // Prepare the country data for insertion
-    const countries = countryData.map((name) => ({ name }));
+    // Create a new document for the country list
+    const countryList = new CountryList({
+      allCountry,
+      preferredCountry
+    });
 
-    // Insert countries into the database
-    await Country.insertMany(countries);
-    console.log("Countries inserted successfully!");
+    // Save the document to the database
+    await countryList.save();
+    console.log("Country list saved successfully!");
+
   } catch (error) {
-    console.error("Error inserting countries:", error);
+    console.error("Error saving country list:", error);
   } finally {
     // Close the connection
     mongoose.connection.close();
