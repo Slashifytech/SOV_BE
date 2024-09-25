@@ -71,17 +71,18 @@ const CompanyOverviewSchema = z.object({
   businessOperationStartYear: z.string().min(1, { message: "Business Operation Start Year is required" }),
   numberOfStudents: z.number().min(1, { message: "Number of Students is required" }),
   popularDestinations: z.array(z.string()).min(1, { message: "At least one popular destination is required" }),
-  studentSourceCountries: z.array(z.string()).min(1, { message: "At least one student source country is required" }),
+  studentSourceCountry: z.string().min(1, { message: "Student Source Country is required" }), // Adjusted to singular
   governmentLicensed: z.enum(['Yes', 'No', 'Not Required in our country'], { 
     required_error: "Government License status is required" 
   }),
   businessRegistrationNumber: z.string().min(1, { message: "Business Registration Number is required" }),
-  businessRegistrationDocument: z.string().min(1, { message: "Business Registration Document is required" }),
+  businessRegistrationDocument: z.string().min(1, { message: "Business Registration Document is required" }), // Assumed as URL
   higherEducationProgrammes: z.array(z.string()).min(1, { message: "At least one higher education programme is required" }),
   financeSources: z.array(z.string()).min(1, { message: "At least one finance source is required" }),
   studyDestinations: z.array(z.string()).min(1, { message: "At least one study destination is required" }),
-  businessProfileDocument: z.string().min(1, { message: "Business Profile Document is required" }),
+  businessProfileDocument: z.string().min(1, { message: "Business Profile Document is required" }), // Assumed as URL
 });
+
 
 // Company Operations Schema
 const CompanyOperationsSchema = z.object({

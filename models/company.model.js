@@ -95,8 +95,8 @@ const CompanyOverviewSchema = new Schema({
   popularDestinations: {
     type: [String], // Array of popular countries
   },
-  studentSourceCountries: {
-    type: [String], // Array of countries
+  studentSourceCountry: {
+    type: String,
   },
   governmentLicensed: {
     type: String,
