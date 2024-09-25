@@ -22,7 +22,6 @@ const PrimaryContactSchema = z.object({
   positionJobTitle: z.string().min(1, { message: "Position/Job Title is required" }),
   emailUsername: z.string().email({ message: "Valid Email is required" }),
   country: z.string().min(1, { message: "Country is required" }),
-  mobile: z.string().min(1, { message: "Mobile Number is required" }),
   phoneNumber: z.string().optional(),
 });
 

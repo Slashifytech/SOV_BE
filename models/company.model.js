@@ -175,9 +175,6 @@ const PrimaryContactSchema = new Schema({
   country: {
     type: String,
   },
-  mobile: {
-    type: String,
-  },
   phoneNumber: {
     type: String,
   },
