@@ -22,14 +22,15 @@ const registerCompany = asyncHandler(async (req, res) => {
     const { companyDetails } = payload;
 
     // Check if a company with the same business name or phone number already exists
-    const isCompanyExist = await Company.exists({
+    const isCompanyExist = await Company.findOne({
         $or: [
             { 'companyDetails.businessName': companyDetails.businessName },
             { 'companyDetails.phoneNumber': companyDetails.phoneNumber }
         ]
     });
 
-    if (isCompanyExist) {
+
+    if (isCompanyExist && isCompanyExist.agentId.toString() !== req.user.id) {
         return res.status(409).json(new ApiResponse(409, {}, "Company with this name or phone number already exists"));
     }
 
