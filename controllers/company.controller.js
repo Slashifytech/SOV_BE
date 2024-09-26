@@ -35,7 +35,8 @@ const registerCompany = asyncHandler(async (req, res) => {
 
     const newCompany = new Company({
         companyDetails,
-        agentId: req.user.id
+        agentId: req.user.id,
+        pageCount: 1
     });
 
     await newCompany.save();
@@ -78,12 +79,12 @@ const registerCompanyContact = asyncHandler(async (req, res) => {
     if (payload.admissionsContacts) {
       company.admissionsContacts = payload.admissionsContacts;
     }
-  
+    company.pageCount = 2;
     // Save the updated company details
     await company.save();
   
     // Retrieve and return the updated contact details
-    const updatedCompany = await Company.findById(company._id).select("primaryContact commissionContact admissionsContacts -_id");
+    const updatedCompany = await Company.findById(company._id).select("primaryContact commissionContact admissionsContacts -_id pageCount");
   
     return res.status(201).json(new ApiResponse(201, updatedCompany, "Company contacts registered successfully"));
   });
@@ -113,14 +114,14 @@ const registerBankDetails = asyncHandler(async (req, res) => {
 
     // Update the bank details for the company
     company.bankDetails = payload;
-
+    company.pageCount = 3;
     // Save the updated company details
     await company.save();
 
     // Retrieve and return the updated bank details
-    const updatedCompany = await Company.findById(company._id).select("bankDetails -_id");
+    const updatedCompany = await Company.findById(company._id).select("pageCount bankDetails -_id");
 
-    return res.status(201).json(new ApiResponse(201, updatedCompany.bankDetails, "Bank details registered successfully"));
+    return res.status(201).json(new ApiResponse(201, updatedCompany, "Bank details registered successfully"));
 });
 
 const registerCompanyOverview = asyncHandler(async (req, res) => {
@@ -145,14 +146,14 @@ const registerCompanyOverview = asyncHandler(async (req, res) => {
 
     // Update the company overview for the company
     company.companyOverview = payload;
-
+    company.pageCount = 4;
     // Save the updated company details
     await company.save();
 
     // Retrieve and return the updated company overview
-    const updatedCompany = await Company.findById(company._id).select("companyOverview -_id");
+    const updatedCompany = await Company.findById(company._id).select("companyOverview -_id pageCount");
 
-    return res.status(200).json(new ApiResponse(200, updatedCompany.companyOverview, "Company overview updated successfully"));
+    return res.status(200).json(new ApiResponse(200, updatedCompany, "Company overview updated successfully"));
 });
 
 const registerCompanyOperations = asyncHandler(async (req, res) => {
@@ -177,14 +178,14 @@ const registerCompanyOperations = asyncHandler(async (req, res) => {
 
     // Update the company operations for the company
     company.companyOperations = payload;
-
+    company.pageCount = 5;
     // Save the updated company details
     await company.save();
 
     // Retrieve and return the updated company operations
-    const updatedCompany = await Company.findById(company._id).select("companyOperations -_id");
+    const updatedCompany = await Company.findById(company._id).select("companyOperations -_id pageCount");
 
-    return res.status(200).json(new ApiResponse(200, updatedCompany.companyOperations, "Company operations updated successfully"));
+    return res.status(200).json(new ApiResponse(200, updatedCompany, "Company operations updated successfully"));
 });
 
 const registerReferences = asyncHandler(async (req, res) => {
@@ -209,14 +210,14 @@ const registerReferences = asyncHandler(async (req, res) => {
 
   // Update the references for the company
   company.references = result.data;
-
+  company.pageCount = 6;
   // Save the updated company details
   await company.save();
 
   // Retrieve the updated references (only the references field, excluding `_id`)
-  const updatedCompany = await Company.findById(company._id).select("references -_id");
+  const updatedCompany = await Company.findById(company._id).select("references -_id pageCount");
 
-  return res.status(200).json(new ApiResponse(200, updatedCompany.references, "References updated successfully"));
+  return res.status(200).json(new ApiResponse(200, updatedCompany, "References updated successfully"));
 });
 
   const getCompanyData = asyncHandler(async (req, res) => {

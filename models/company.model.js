@@ -231,6 +231,10 @@ const CompanySchema = new Schema({
     ref: "Agent",
     required: true,
   },
+  pageCount: {
+    type: Number,
+    default: 1
+  }
 }, {
   timestamps: true,  // Automatically add createdAt and updatedAt fields
 });
