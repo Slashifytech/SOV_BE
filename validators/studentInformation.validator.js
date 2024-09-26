@@ -20,6 +20,7 @@ export const personalInformationSchema = z.object({
   firstLanguage: z.string().nonempty("First Language is required"),
   email: z.string().email("Enter a valid email address").nonempty("Email is required"),
   phone: phoneSchema,
+  profilePicture: z.string().optional(),
 });
 
 // Schema for passport details

@@ -16,7 +16,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
   // Validate payload using Zod
   const validation = studentPersonalAndPassportSchema.safeParse(payload);
   if (!validation.success) {
-    const errorMessage = validation.error.errors[0].message;
+    const errorMessage = validation.error.errors[0];
     return res.status(400).json(new ApiResponse(400, {}, `Validation Error: ${errorMessage}`));
   }
 

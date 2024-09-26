@@ -52,6 +52,9 @@ const PersonalInformationSchema = new Schema(
       type: PhoneSchema,
       required: false
     },
+    profilePicture:{
+      type: String,
+    }
   },
   { _id: false }
 );

@@ -153,7 +153,7 @@ const CompanyDetailsSchema = new Schema({
   },
   whatsappNumber: {
     type: String,
-  },
+  }
 });
 
 const PrimaryContactSchema = new Schema({
@@ -178,6 +178,9 @@ const PrimaryContactSchema = new Schema({
   phoneNumber: {
     type: String,
   },
+  profilePicture:{
+    type: String,
+  }
 });
 
 const CommissionContactSchema = new Schema({

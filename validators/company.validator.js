@@ -23,6 +23,7 @@ const PrimaryContactSchema = z.object({
   emailUsername: z.string().email({ message: "Valid Email is required" }),
   country: z.string().min(1, { message: "Country is required" }),
   phoneNumber: z.string().optional(),
+  profilePicture: z.string().optional(),
 });
 
 // Commission Contact Schema
