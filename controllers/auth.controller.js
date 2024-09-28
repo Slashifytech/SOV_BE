@@ -21,7 +21,8 @@ const registerStudent = asyncHandler(async (req, res) => {
       .json(new ApiResponse(400, {}, validation.error.errors));
   }
   const findStudent = await Student.findOne({ email: payload.email });
-  if (findStudent) {
+  const isAgentExist = await Agent.exists({ "accountDetails.founderOrCeo.email": payload.accountDetails.founderOrCeo.email });
+  if (findStudent || isAgentExist) {
     return res
       .status(409)
       .json(new ApiResponse(409, {}, "Email is already in use"));
@@ -62,7 +63,8 @@ const registerStudent = asyncHandler(async (req, res) => {
 
     // Check if founder/CEO's email is already registered
     const isAgentExist = await Agent.exists({ "accountDetails.founderOrCeo.email": payload.accountDetails.founderOrCeo.email });
-    if (isAgentExist) return res.status(409).json(new ApiResponse(409, {}, "Email is already in use"));
+    const findStudent = await Student.findOne({ email: payload.email });
+    if (isAgentExist || findStudent) return res.status(409).json(new ApiResponse(409, {}, "Email is already in use"));
 
     // Prepare the agent data for saving
     const { companyDetails, accountDetails, password } = payload;
