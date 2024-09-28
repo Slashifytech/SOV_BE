@@ -34,10 +34,18 @@ const registerCompany = asyncHandler(async (req, res) => {
         return res.status(409).json(new ApiResponse(409, {}, "Company with this name or phone number already exists"));
     }
 
+    if (isCompanyExist && isCompanyExist.agentId.toString() === req.user.id) {
+      isCompanyExist.companyDetails = companyDetails;
+      await isCompanyExist.save();
+      const updatedCompany = await Company.findById(isCompanyExist._id).select("-__v");
+      return res.status(200).json(new ApiResponse(200, updatedCompany, "Company updated successfully"));
+    }
+
+    // If the company doesn't exist or belongs to a different agent, insert new data
     const newCompany = new Company({
-        companyDetails,
-        agentId: req.user.id,
-        pageCount: 1
+      companyDetails,
+      agentId: req.user.id,
+      pageCount: 1
     });
 
     await newCompany.save();
