@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmailVerification = async () => {
+const sendEmailVerification = async (email, opt) => {
   // Debugging output
   console.log("Sender Email:", process.env.SENDER_MAIL);
   console.log("App Password:", process.env.APP_PASSWORD);
@@ -24,9 +24,9 @@ const sendEmailVerification = async () => {
       name: "SOV",
       address: process.env.SENDER_MAIL,
     },
-    to: "arvindydv03@gmail.com",
-    subject: "Project Management Password",
-    text: `password: test`,
+    to: email,
+    subject: "Verify Your email",
+    text: `Your opt is ${opt}`,
   };
 
   try {
@@ -37,5 +37,4 @@ const sendEmailVerification = async () => {
     console.error("Error sending email:", error);
   }
 };
-
-sendEmailVerification();
+export { sendEmailVerification };
