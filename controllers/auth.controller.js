@@ -8,26 +8,43 @@ import {
   loginSchema,
   registerAgentSchema,
   registerStudentSchema,
+  verifyOtpSchema,
 } from "../validators/auth.validator.js";
 import { generateTokens } from "../utils/genrateToken.js";
+import { generateOtp } from "../utils/commonFuntions.js";
+import { sendEmailVerification } from "../utils/sendMail.js";
+import { TempStudent } from "../models/tempStudent.model.js";
 
 
-const registerStudent = asyncHandler(async (req, res) => {
+const sentStudentOtp = asyncHandler(async (req, res) => {
   const payload = req.body;
+
+  // Validate the payload using Zod schema
   const validation = registerStudentSchema.safeParse(payload);
   if (!validation.success) {
     return res
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors));
   }
+
+  // Check if the email is already in use by a student or agent
+  const findTempStudent = await TempStudent.findOne({ email: payload.email });
   const findStudent = await Student.findOne({ email: payload.email });
-  if (findStudent) {
+  const isAgentExist = await Agent.exists({
+    "accountDetails.founderOrCeo.email": payload.email,
+  });
+  if (findTempStudent || findStudent || isAgentExist) {
     return res
       .status(409)
       .json(new ApiResponse(409, {}, "Email is already in use"));
   }
 
-  const data = {
+  // Generate OTP and send it to the user's email
+  const OTP = generateOtp();
+  await sendEmailVerification(payload.email, OTP);
+
+  // Save the user data and OTP temporarily for verification
+  const tempStudent = await TempStudent.create({
     firstName: payload.firstName,
     lastName: payload.lastName,
     email: payload.email,
@@ -37,45 +54,138 @@ const registerStudent = asyncHandler(async (req, res) => {
       number: payload.number,
     },
     studentType: payload.studentType,
-    password: payload.password, 
-    hearAbout: payload.hearAbout || null
-  };
+    password: payload.password, // Hash the password if needed
+    hearAbout: payload.hearAbout || null,
+    otp: OTP, // Save OTP
+    otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
+  });
 
-  const student = await Student.create(data);
-  const createdStudent = await Student.findById(student._id).select(
-    "-password"
+  return res.status(200).json(
+    new ApiResponse(200, { email: tempStudent.email }, "OTP sent to your email")
   );
+});
+
+const verifyStudentOtp = asyncHandler(async (req, res) => {
+  const payload = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = verifyOtpSchema.safeParse(payload);
+  if (!validation.success) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Find the temporary student record
+  const tempStudent = await TempStudent.findOne({ email: payload.email });
+
+  if (!tempStudent) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
+  }
+
+  // Check if OTP is correct and not expired
+
+  const isOtpValid = await tempStudent.isOtpCorrect(payload.otp);
+  if (!isOtpValid || tempStudent.otpExpiry < Date.now()) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
+  }
+
+  // Once OTP is verified, create a new student in the Student collection
+  const newStudent = await Student.create({
+    firstName: tempStudent.firstName,
+    lastName: tempStudent.lastName,
+    email: tempStudent.email,
+    country: tempStudent.country,
+    phone: tempStudent.phone,
+    studentType: tempStudent.studentType,
+    password: tempStudent.password,
+    hearAbout: tempStudent.hearAbout,
+  });
+
+  // Remove the temp student record
+  await TempStudent.deleteOne({ email: payload.email });
 
   return res
     .status(201)
-    .json(
-      new ApiResponse(201, createdStudent, "Student registered successfully")
-    );
+    .json(new ApiResponse(201, { email: newStudent.email }, "Student registered successfully"));
 });
 
- const registerAgent = asyncHandler(async (req, res) => {
-  const { body: payload } = req;
+const sendAgentOtp = asyncHandler(async (req, res) => {
+  const payload = req.body;
 
-    // Validate the payload using Zod schema
-    const { success, error } = registerAgentSchema.safeParse(payload);
-    if (!success) return res.status(400).json(new ApiResponse(400, {}, error.errors));
+  // Validate the payload using Zod schema
+  const validation = registerAgentSchema.safeParse(payload);
+  if (!validation.success) {
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
+  }
 
-    // Check if founder/CEO's email is already registered
-    const isAgentExist = await Agent.exists({ "accountDetails.founderOrCeo.email": payload.accountDetails.founderOrCeo.email });
-    if (isAgentExist) return res.status(409).json(new ApiResponse(409, {}, "Email is already in use"));
+  // Check if the email is already in use by a student or agent
+  const findTempAgent = await TempAgent.findOne({ "accountDetails.founderOrCeo.email": payload.accountDetails.founderOrCeo.email });
+  const findStudent = await Student.findOne({ email: payload.accountDetails.founderOrCeo.email });
+  const isAgentExist = await Agent.exists({
+    "accountDetails.founderOrCeo.email": payload.accountDetails.founderOrCeo.email,
+  });
+  
+  if (findTempAgent || findStudent || isAgentExist) {
+    return res.status(409).json(new ApiResponse(409, {}, "Email is already in use"));
+  }
 
-    // Prepare the agent data for saving
-    const { companyDetails, accountDetails, password } = payload;
-    const agentData = { companyDetails, accountDetails, password };
+  // Generate OTP and send it to the user's email
+  const OTP = generateOtp();
+  await sendEmailVerification(payload.accountDetails.founderOrCeo.email, OTP);
 
-    // Create and save the agent, then fetch without the password
-    const agent = new Agent(agentData);
-    await agent.save();
-    const createdAgent = await Agent.findById(agent._id).select("-password");
+  // Save the agent data and OTP temporarily for verification
+  const tempAgent = await TempAgent.create({
+    companyDetails: payload.companyDetails,
+    accountDetails: payload.accountDetails,
+    password: payload.password, // Ensure password is hashed
+    otp: OTP, // Save OTP
+    otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
+  });
 
-    return res.status(201).json(new ApiResponse(201, createdAgent, "Agent registered successfully"));
+  return res.status(200).json(
+    new ApiResponse(200, { email: tempAgent.accountDetails.founderOrCeo.email }, "OTP sent to your email")
+  );
 });
 
+const verifyAgentOtp = asyncHandler(async (req, res) => {
+  const payload = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = verifyOtpSchema.safeParse(payload);
+  if (!validation.success) {
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Find the temporary agent record
+  const tempAgent = await TempAgent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
+
+  if (!tempAgent) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
+  }
+
+  // Check if OTP is correct and not expired
+  const isOtpValid = await tempAgent.isOtpCorrect(payload.otp);
+  if (!isOtpValid || tempAgent.otpExpiry < Date.now()) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
+  }
+
+  // Once OTP is verified, create a new agent in the Agent collection
+  const agentData = {
+    companyDetails: tempAgent.companyDetails,
+    accountDetails: tempAgent.accountDetails,
+    password: tempAgent.password,
+  };
+
+  const agent = new Agent(agentData);
+  await agent.save();
+  const createdAgent = await Agent.findById(agent._id).select("-password");
+
+  // Remove the temp agent record
+  await TempAgent.deleteOne({ "accountDetails.founderOrCeo.email": payload.email });
+
+  return res.status(201).json(new ApiResponse(201, createdAgent, "Agent registered successfully"));
+});
 
 const login = asyncHandler(async (req, res) => {
   const payload = req.body;
@@ -241,4 +351,4 @@ const approveStudent =  asyncHandler (async (req, res)=>{
     
 })
 
-export { registerStudent, registerAgent, login, logout, changePassword, approveStudent };
+export { verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp };

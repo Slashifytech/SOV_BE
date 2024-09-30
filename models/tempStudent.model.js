@@ -18,7 +18,7 @@ const phoneSchema = new Schema(
   { _id: false }
 );
 
-const studentSchema = new Schema(
+const tempStudentSchema = new Schema(
   {
     firstName: {
       type: String,
@@ -50,7 +50,15 @@ const studentSchema = new Schema(
       type: String,
       required: [true, "Password is required"],
     },
-    approved: {
+    otp: {
+      type: String,
+      required: true,
+    },
+    otpExpiry: {
+      type: Date,
+      required: true,
+    },
+    isOtpVerified: {
       type: Boolean,
       default: false,
     },
@@ -58,26 +66,35 @@ const studentSchema = new Schema(
       type: String,
       required: false,
     },
-    isOtpVerified: {
-      type: Boolean,
-      default: false,
-    },
   },
   {
     timestamps: true,
   }
 );
 
-// Encrypt password before saving the student
-studentSchema.pre("save", async function (next) {
+// Password encryption before saving the student
+tempStudentSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
+// OTP encryption before saving (optional but can enhance security)
+tempStudentSchema.pre("save", async function (next) {
+  if (this.otp && this.isModified("otp")) {
+    this.otp = await bcrypt.hash(this.otp, 10);
+  }
+  next();
+});
+
 // Password comparison method
-studentSchema.methods.isPasswordCorrect = async function (password) {
+tempStudentSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-export const Student = mongoose.model("Student", studentSchema);
+// OTP comparison method
+tempStudentSchema.methods.isOtpCorrect = async function (otp) {
+  return await bcrypt.compare(otp, this.otp);
+};
+
+export const TempStudent = mongoose.model("TempStudent", tempStudentSchema);

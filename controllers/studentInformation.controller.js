@@ -21,7 +21,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
   }
 
   const { personalInformation, passportDetails } = validation.data;
-  const idField = req.user.role === '3' ? 'agentId' : 'studentId';
+  const idField = req.user.role === '2' ? 'agentId' : 'studentId';
 
   // Check if email, phone, and passport number already exist
   const existingRecord = await StudentInformation.findOne({
@@ -31,7 +31,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
 
   // If record exists but is associated with another user, deny access
-  if (existingRecord && existingRecord[idField].toString() !== req.user.id) {
+  if (existingRecord && existingRecord[idField]?.toString() !== req.user.id) {
     return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: You are not allowed to update this record"));
   }
 
