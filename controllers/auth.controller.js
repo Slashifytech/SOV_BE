@@ -432,4 +432,38 @@ const approveStudent =  asyncHandler (async (req, res)=>{
     .json(new ApiResponse(200, {}, "Password reset successfully"));
 });
 
-export { verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword };
+const resendStudentOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Validate the payload using Zod schema (if needed)
+  const validation = resendOtpSchema.safeParse({ email });
+  if (!validation.success) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Check if the temporary student exists
+  const tempStudent = await TempStudent.findOne({ email });
+  if (!tempStudent) {
+    return res.status(404).json(new ApiResponse(404, {}, "Student not found"));
+  }
+
+  // Generate a new OTP
+  const OTP = generateOtp();
+
+  // Send the new OTP to the user's email
+  await sendEmailVerification(email, OTP);
+
+  // Update the OTP and OTP expiry in the temporary student record
+  tempStudent.otp = OTP;
+  tempStudent.otpExpiry = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+  await tempStudent.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { email: tempStudent.email }, "OTP resent to your email"));
+});
+
+
+export { resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword };
