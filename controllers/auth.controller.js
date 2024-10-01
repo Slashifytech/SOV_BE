@@ -16,6 +16,7 @@ import { generateTokens } from "../utils/genrateToken.js";
 import { generateOtp } from "../utils/commonFuntions.js";
 import { sendEmailVerification } from "../utils/sendMail.js";
 import { TempStudent } from "../models/tempStudent.model.js";
+import { TempAgent } from "../models/tempAgent.model.js";
 
 
 const sentStudentOtp = asyncHandler(async (req, res) => {
