@@ -5,9 +5,11 @@ import bcrypt from "bcrypt";
 import { Agent } from "../models/agent.model.js";
 import {
   changePasswordSchema,
+  forgotPasswordSchema,
   loginSchema,
   registerAgentSchema,
   registerStudentSchema,
+  resetPasswordSchema,
   verifyOtpSchema,
 } from "../validators/auth.validator.js";
 import { generateTokens } from "../utils/genrateToken.js";
@@ -351,4 +353,82 @@ const approveStudent =  asyncHandler (async (req, res)=>{
     
 })
 
-export { verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp };
+ const requestPasswordResetOtp = asyncHandler(async (req, res) => {
+  const payload = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = forgotPasswordSchema.safeParse(payload);
+  if (!validation.success) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Find the student by email
+  const student = await Student.findOne({ email: payload.email });
+  if (!student) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, {}, "No student found with this email"));
+  }
+
+  // Generate OTP and send it to the user's email
+  const OTP = generateOtp();
+  await sendEmailVerification(payload.email, OTP);
+
+  // Save OTP and expiry to a temp student record
+  await TempStudent.updateOne(
+    { email: payload.email },
+    {
+      otp: OTP,
+      otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
+    },
+    { upsert: true }
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { email: payload.email }, "OTP sent to your email"));
+});
+
+ const resetPassword = asyncHandler(async (req, res) => {
+  const payload = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = resetPasswordSchema.safeParse(payload);
+  if (!validation.success) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Find the temp student record with email and OTP
+  const tempStudent = await TempStudent.findOne({ email: payload.email });
+  if (!tempStudent) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
+  }
+
+  // Check if OTP is correct and not expired
+  const isOtpValid = tempStudent.otp === payload.otp;
+  if (!isOtpValid || tempStudent.otpExpiry < Date.now()) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
+  }
+
+  // Hash the new password
+  const hashedPassword = await bcrypt.hash(payload.password, 10);
+
+  // Update the student's password in the Student collection
+  await Student.updateOne(
+    { email: payload.email },
+    { password: hashedPassword }
+  );
+
+  // Remove the temp student OTP record
+  await TempStudent.deleteOne({ email: payload.email });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset successfully"));
+});
+
+export { verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword };

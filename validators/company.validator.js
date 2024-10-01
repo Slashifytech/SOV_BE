@@ -63,7 +63,7 @@ const BankDetailsSchema = z.object({
   sortCode: z.string().min(1, { message: "Sort Code is required" }),
   bankAccountName: z.string().min(1, { message: "Bank Account Name is required" }),
   bankAccountNumber: z.string().min(1, { message: "Bank Account Number is required" }),
-  intermediarySwiftCode: z.string().min(1, { message: "Intermediary SWIFT Code is required" }),
+  intermediarySwiftCode: z.string().optional(),
   iban: z.string().min(1, { message: "IBAN is required" }),
 });
 

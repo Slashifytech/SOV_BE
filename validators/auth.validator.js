@@ -64,3 +64,14 @@ export const verifyOtpSchema = z.object({
     .regex(/^\d+$/, { message: "OTP must be numeric" }),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  otp: z.string().length(6, { message: "OTP must be 6 digits" }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters" }),
+});

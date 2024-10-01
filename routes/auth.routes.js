@@ -4,6 +4,8 @@ import {
   changePassword,
   login,
   logout,
+  requestPasswordResetOtp,
+  resetPassword,
   sendAgentOtp,
   sentStudentOtp,
   verifyAgentOtp,
@@ -21,5 +23,7 @@ router.route("/login").post(login);
 router.route("/logout").post(verifyJwt, logout);
 router.route("/change-password").patch(verifyJwt, changePassword);
 router.route("/approve-student").patch(verifyAdmin, approveStudent);
+router.route("/password-reset-otp").post(requestPasswordResetOtp);
+router.route("/reset-password").post(resetPassword);
 
 export default router;
