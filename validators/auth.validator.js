@@ -73,5 +73,6 @@ export const resetPasswordSchema = z.object({
   otp: z.string().length(6, { message: "OTP must be 6 digits" }),
   password: z
     .string()
-    .min(8, { message: "Password must be at least 8 characters" }),
+    .min(6, { message: "Password must be at least 8 characters" }),
 });
+

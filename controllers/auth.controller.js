@@ -14,7 +14,7 @@ import {
 } from "../validators/auth.validator.js";
 import { generateTokens } from "../utils/genrateToken.js";
 import { generateOtp } from "../utils/commonFuntions.js";
-import { sendEmailVerification } from "../utils/sendMail.js";
+import { sendAuthData, sendEmailVerification } from "../utils/sendMail.js";
 import { TempStudent } from "../models/tempStudent.model.js";
 import { TempAgent } from "../models/tempAgent.model.js";
 
@@ -92,6 +92,8 @@ const verifyStudentOtp = asyncHandler(async (req, res) => {
   if (!isOtpValid || tempStudent.otpExpiry < Date.now()) {
     return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
   }
+
+  await sendAuthData(payload.email, payload.password);
 
   // Once OTP is verified, create a new student in the Student collection
   const newStudent = await Student.create({
@@ -179,6 +181,8 @@ const verifyAgentOtp = asyncHandler(async (req, res) => {
     accountDetails: tempAgent.accountDetails,
     password: tempAgent.password,
   };
+
+  await sendAuthData(payload.email, payload.password);
 
   const agent = new Agent(agentData);
   await agent.save();

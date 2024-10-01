@@ -37,4 +37,25 @@ const sendEmailVerification = async (email, opt) => {
     console.error("Error sending email:", error);
   }
 };
-export { sendEmailVerification };
+
+const sendAuthData = async (email, data) => {
+
+  const mailOptions = {
+    from: {
+      name: "SOV",
+      address: process.env.SENDER_MAIL,
+    },
+    to: email,
+    subject: "Account Credentials",
+    text: `Your Credentials is ${{email: data.email, password: data.password}}`,
+  };
+
+  try {
+    // Send the email
+    const mail = await transporter.sendMail(mailOptions);
+    console.log("Mail sent successfully:", mail);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
+export { sendEmailVerification, sendAuthData };
