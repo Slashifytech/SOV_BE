@@ -21,7 +21,7 @@ const PersonalInformationSchema = new Schema({
 const EducationDetailsSchema = new Schema({
     educationLevel: { 
         type: String, 
-        enum: ['Diploma', 'Post Graduate', 'Under Graduate'], 
+        // enum: ['Diploma', 'Post Graduate', 'Under Graduate'], 
         required: true 
     },
     markSheet: { 
@@ -50,8 +50,39 @@ const IELTSSchema = new Schema({
 // Schema for Document Upload
 const DocumentUploadSchema = new Schema({
     offerLetter: { type: String },  // URL or file path to the uploaded offer letter
-    letterOfAcceptance: { type: String },  // URL or file path to the uploaded letter of acceptance
+    feeReceipt: { type: String },  // URL or file path to the uploaded letter of acceptance
+    gicLetter: { type: String },  
+    medical: { type: String },  
+    pcc: { type: String },  
+    pal: { type: String },  
+    ielts: { type: String },  
 });
+
+// Schema for PTE Scores
+const PTESchema = new Schema({
+    listening: { type: Number, required: false },
+    reading: { type: Number, required: false },
+    writing: { type: Number, required: false },
+    speaking: { type: Number, required: false },
+    overallBands: { type: Number, required: false },
+}, { _id: false });  // Set _id to false if you don't want separate IDs for embedded sub-documents
+
+// Schema for TOEFL Scores
+const TOEFLSchema = new Schema({
+    listening: { type: Number, required: false },
+    reading: { type: Number, required: false },
+    writing: { type: Number, required: false },
+    speaking: { type: Number, required: false },
+    overallBands: { type: Number, required: false },
+}, { _id: false });
+
+// Schema for Document Upload
+const CertificateUploadSchema = new Schema({
+    url: {
+        type:String
+    }
+}, { _id: false });
+
 
 // Main schema for Visa Registration
 const InstitutionSchema = new Schema({
@@ -60,6 +91,9 @@ const InstitutionSchema = new Schema({
         educationDetails: EducationDetailsSchema,
         preferences: PreferencesSchema,
         ieltsScore: IELTSSchema,
+        ptes: PTESchema,
+        toefl:TOEFLSchema,
+        certificate: CertificateUploadSchema,
         type:{
             type: String,
             default: "Offer Letter"
