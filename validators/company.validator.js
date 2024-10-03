@@ -77,6 +77,7 @@ const CompanyOverviewSchema = z.object({
     required_error: "Government License status is required" 
   }),
   businessRegistrationNumber: z.string().min(1, { message: "Business Registration Number is required" }),
+  businessRegistrationType: z.string().min(1, { message: "Business Registration Type is required" }),
   businessRegistrationDocument: z.string().min(1, { message: "Business Registration Document is required" }), // Assumed as URL
   higherEducationProgrammes: z.array(z.string()).min(1, { message: "At least one higher education programme is required" }),
   financeSources: z.array(z.string()).min(1, { message: "At least one finance source is required" }),
