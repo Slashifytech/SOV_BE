@@ -359,7 +359,7 @@ const approveStudent =  asyncHandler (async (req, res)=>{
     
 })
 
- const requestPasswordResetOtp = asyncHandler(async (req, res) => {
+const requestPasswordResetOtp = asyncHandler(async (req, res) => {
   const payload = req.body;
 
   // Validate the payload using Zod schema
@@ -370,71 +370,182 @@ const approveStudent =  asyncHandler (async (req, res)=>{
       .json(new ApiResponse(400, {}, validation.error.errors));
   }
 
-  // Find the student by email
-  const student = await Student.findOne({ email: payload.email });
-  if (!student) {
+  let tempModel, modelType;
+
+  if (payload.type === '2') {
+    // Find and update in the agent model
+    modelType = "Agent";
+    tempModel = await TempAgent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
+    if (!tempModel) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "No agent found with this email"));
+    }
+  } else if (payload.type === '3') {
+    // Find and update in the student model
+    modelType = "Student";
+    tempModel = await Student.findOne({ email: payload.email });
+    if (!tempModel) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "No student found with this email"));
+    }
+  } else {
     return res
-      .status(404)
-      .json(new ApiResponse(404, {}, "No student found with this email"));
+      .status(400)
+      .json(new ApiResponse(400, {}, "Invalid type provided"));
   }
 
   // Generate OTP and send it to the user's email
   const OTP = generateOtp();
   await sendEmailVerification(payload.email, OTP);
 
-  // Save OTP and expiry to a temp student record
-  await TempStudent.updateOne(
-    { email: payload.email },
-    {
-      otp: OTP,
-      otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
-    },
-    { upsert: true }
-  );
+  // Save OTP and expiry to the appropriate temp record (agent or student)
+  if (payload.type === '2') {
+    await TempAgent.updateOne(
+      { "accountDetails.founderOrCeo.email": payload.email },
+      {
+        otp: await bcrypt.hash(OTP, 10), // Hash the OTP for security
+        otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
+      },
+      { upsert: true }
+    );
+  } else if (payload.type === '3') {
+    await TempStudent.updateOne(
+      { email: payload.email },
+      {
+        otp: await bcrypt.hash(OTP, 10), // Hash the OTP for security
+        otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
+      },
+      { upsert: true }
+    );
+  }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { email: payload.email }, "OTP sent to your email"));
+    .json(new ApiResponse(200, { email: payload.email }, `${modelType} OTP sent to your email`));
 });
 
- const resetPassword = asyncHandler(async (req, res) => {
-  const payload = req.body;
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp, type } = req.body;
 
   // Validate the payload using Zod schema
-  const validation = resetPasswordSchema.safeParse(payload);
+  const validation = verifyOtpSchema.safeParse({ email, otp, type });
   if (!validation.success) {
     return res
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors));
   }
 
-  // Find the temp student record with email and OTP
-  const tempStudent = await TempStudent.findOne({ email: payload.email });
-  if (!tempStudent) {
-    return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
+  let tempModel, modelType;
+
+  if (type === '2') {
+    // Agent model lookup
+    modelType = "Agent";
+    tempModel = await TempAgent.findOne({ "accountDetails.founderOrCeo.email": email });
+    if (!tempModel) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "No agent found with this email"));
+    }
+  } else if (type === '3') {
+    // Student model lookup
+    modelType = "Student";
+    tempModel = await TempStudent.findOne({ email });
+    if (!tempModel) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "No student found with this email"));
+    }
   }
 
-  // Check if OTP is correct and not expired
-  const isOtpValid = tempStudent.otp === payload.otp;
-  if (!isOtpValid || tempStudent.otpExpiry < Date.now()) {
-    return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
+  // Check if OTP has expired
+  if (Date.now() > tempModel.otpExpiry) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, "OTP has expired"));
   }
 
-  // Hash the new password
-  const hashedPassword = await bcrypt.hash(payload.password, 10);
+  // Verify the OTP using the model's `isOtpCorrect` method
+  const isOtpCorrect = await tempModel.isOtpCorrect(otp);
+  if (!isOtpCorrect) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, "Invalid OTP"));
+  }
 
-  // Update the student's password in the Student collection
-  await Student.updateOne(
-    { email: payload.email },
-    { password: hashedPassword }
-  );
-
-  // Remove the temp student OTP record
-  await TempStudent.deleteOne({ email: payload.email });
+  // Mark OTP as verified
+  tempModel.isOtpVerified = true;
+  await tempModel.save();
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Password reset successfully"));
+    .json(new ApiResponse(200, { email }, `${modelType} OTP verified successfully`));
+});
+
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { email, type, otp, newPassword } = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = resetPasswordSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  let tempModel;
+  let userModel;
+
+  if (type === '2') {
+    // Type 2 is Agent
+    tempModel = TempAgent;
+    userModel = Agent;
+  } else if (type === '3') {
+    // Type 3 is Student
+    tempModel = TempStudent;
+    userModel = Student;
+  }
+
+  // Find the temporary user (Agent/Student) by email and OTP
+  const tempUser = await tempModel.findOne({ email });
+  if (!tempUser) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, {}, "User not found or OTP expired"));
+  }
+
+  // Verify if OTP is correct and not expired
+  const isOtpValid = await tempUser.isOtpCorrect(otp);
+  if (!isOtpValid || tempUser.otpExpiry < Date.now()) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, "Invalid or expired OTP"));
+  }
+
+  // Find the actual user (Agent/Student) by email in their respective model
+  const user = await userModel.findOne({ email });
+  if (!user) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, {}, "User not found"));
+  }
+
+  // Encrypt the new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  
+  // Update the password and mark OTP as verified in userModel
+  user.password = hashedPassword;
+  user.isOtpVerified = true; // Mark as OTP verified if applicable
+  await user.save();
+
+  // Optionally, you may want to delete the temporary OTP record from the Temp collection
+  await tempModel.deleteOne({ email });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated successfully"));
 });
 
 const resendStudentOtp = asyncHandler(async (req, res) => {
@@ -504,4 +615,4 @@ const resendAgentOtp = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { email: tempAgent.accountDetails.founderOrCeo.email }, "OTP resent to your email"));
 });
 
-export { resendAgentOtp, resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword };
+export { resendAgentOtp, resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword, verifyOtp };

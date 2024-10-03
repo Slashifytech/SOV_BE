@@ -53,27 +53,19 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(6, "Password must be at least 6 characters long"),
 });
 
-export const verifyOtpSchema = z.object({
-  email: z
-    .string()
-    .email({ message: "Invalid email address" })
-    .nonempty({ message: "Email is required" }),
-  otp: z
-    .string()
-    .length(4, { message: "OTP must be exactly 4 digits" })
-    .regex(/^\d+$/, { message: "OTP must be numeric" }),
-});
+// export const verifyOtpSchema = z.object({
+//   email: z
+//     .string()
+//     .email({ message: "Invalid email address" })
+//     .nonempty({ message: "Email is required" }),
+//   otp: z
+//     .string()
+//     .length(4, { message: "OTP must be exactly 4 digits" })
+//     .regex(/^\d+$/, { message: "OTP must be numeric" }),
+// });
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-});
-
-export const resetPasswordSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  otp: z.string().length(6, { message: "OTP must be 6 digits" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 8 characters" }),
 });
 
 export const resendOtpSchema = z.object({
@@ -81,5 +73,18 @@ export const resendOtpSchema = z.object({
     .string()
     .email({ message: "Invalid email address" })
     .nonempty({ message: "Email is required" }),
+});
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().min(4, "OTP must be at least 4 characters long"),
+  type: z.enum(['2', '3'], "Type must be either '2' (agent) or '3' (student)"),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  type: z.enum(['2', '3']), // '2' for Agent, '3' for Student
+  otp: z.string().min(4), // Assuming OTP is 4 digits or more
+  newPassword: z.string().min(6), // Minimum length of 6 for the password
 });
 
