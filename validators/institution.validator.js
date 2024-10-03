@@ -100,3 +100,31 @@ export const GICSchema = z.object({
   documentUpload: DocumentUploadSchema,
   studentInformationId: z.string().nonempty("studentInformationId is required"),
 });
+
+const StudentDocumentSchema = z.object({
+  aadharCard: z.string().optional(),
+  panCard: z.string().optional(),
+});
+
+// Zod schema for Parent Document
+const ParentDocumentSchema = z.object({
+  fatherAadharCard: z.string().optional(),
+  fatherPanCard: z.string().optional(),
+  motherAadharCard: z.string().optional(),
+  motherPanCard: z.string().optional(),
+});
+
+// Zod schema for Offer Letter and Passport
+const OfferLetterAnsPassportSchema = z.object({
+  offerLetter: z.string().optional(),
+  passport: z.string().optional(),
+});
+
+// Main Zod schema for Course Fee Application
+export const CourseFeeApplicationSchema = z.object({
+  personalDetails:PersonalInformationSchema,
+  studentDocument: StudentDocumentSchema,
+  parentDocument: ParentDocumentSchema,
+  offerLetterAnsPassport: OfferLetterAnsPassportSchema,
+  studentInformationId: z.string().nonempty("studentInformationId is required"),
+});

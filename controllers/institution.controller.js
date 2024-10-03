@@ -2,7 +2,7 @@ import { Institution } from "../models/institution.model.js";
 import { StudentInformation } from "../models/studentInformation.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { GICSchema, OfferLetterSchema } from "../validators/institution.validator.js";
+import { CourseFeeApplicationSchema, GICSchema, OfferLetterSchema } from "../validators/institution.validator.js";
 
 // Function to generate unique Application ID
 async function generateApplicationId() {
@@ -177,7 +177,48 @@ const getAllApplications = asyncHandler(async (req, res) => {
     );
 });
 
+const registerCourseFeeApplication = asyncHandler(async (req, res) => {
+    const { body: payload, user } = req;
+
+    // Validate the payload using the Zod schema
+    const validation = CourseFeeApplicationSchema.safeParse(payload.courseFeeApplication);
+    if (!validation.success) {
+        return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
+    }
+
+    // Find student information based on the provided studentInformationId
+    const studentInformation = await StudentInformation.findOne({ _id: payload.courseFeeApplication.studentInformationId });
+    if (!studentInformation) {
+        return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+    }
+
+    // Check authorization based on user role and student/agent ID
+    const isAgentAuthorized = user.role === '2' && studentInformation.agentId?.toString() === user.id;
+    const isStudentAuthorized = user.role === '3' && studentInformation.studentId?.toString() === user.id;
+
+    if (!(isAgentAuthorized || isStudentAuthorized)) {
+        return res.status(403).json(new ApiResponse(403, {}, "Unauthorized user"));
+    }
+
+    const applicationId = await generateApplicationId();
+
+    // Create a new course fee application document
+    const newCourseFeeApplication = await Institution.create({
+        courseFeeApplication: payload.courseFeeApplication,
+        studentInformationId: payload.courseFeeApplication.studentInformationId,
+        applicationId,
+        userId: req.user.id
+    });
+
+    // Retrieve the created course fee application excluding the __v field
+    const createdCourseFeeApplication = await Institution.findById(newCourseFeeApplication._id).select("-__v").exec();
+
+    // Return success response
+    return res.status(201).json(new ApiResponse(201, createdCourseFeeApplication, "Course Fee Application registered successfully"));
+});
 
 
 
-export { registerOfferLetter, registerGIC, getAllApplications };
+
+
+export { registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication};

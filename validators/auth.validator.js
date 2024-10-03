@@ -76,3 +76,10 @@ export const resetPasswordSchema = z.object({
     .min(6, { message: "Password must be at least 8 characters" }),
 });
 
+export const resendOtpSchema = z.object({
+  email: z
+    .string()
+    .email({ message: "Invalid email address" })
+    .nonempty({ message: "Email is required" }),
+});
+

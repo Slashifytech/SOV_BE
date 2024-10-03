@@ -13,7 +13,8 @@ import {allCountry, preferredCountry} from "./countryData.js"
     // Create a new document for the country list
     const countryList = new CountryList({
       allCountry,
-      preferredCountry
+      preferredCountry,
+      cous
     });
 
     // Save the document to the database

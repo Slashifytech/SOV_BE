@@ -1,3 +1,4 @@
+import { types } from "@babel/core";
 import mongoose, { Schema } from "mongoose";
 
 // Institute Schema
@@ -12,6 +13,9 @@ const InstituteSchema = new Schema({
     required: true,
     trim: true,
   },
+  courses: {
+    type: [String]
+  }
 }, {
   timestamps: true,  // Automatically add createdAt and updatedAt fields
 });

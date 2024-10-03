@@ -9,6 +9,7 @@ import {
   loginSchema,
   registerAgentSchema,
   registerStudentSchema,
+  resendOtpSchema,
   resetPasswordSchema,
   verifyOtpSchema,
 } from "../validators/auth.validator.js";
@@ -470,4 +471,37 @@ const resendStudentOtp = asyncHandler(async (req, res) => {
 });
 
 
-export { resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword };
+const resendAgentOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = resendOtpSchema.safeParse({ email });
+  if (!validation.success) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Check if the temporary agent exists
+  const tempAgent = await TempAgent.findOne({ "accountDetails.founderOrCeo.email": email });
+  if (!tempAgent) {
+    return res.status(404).json(new ApiResponse(404, {}, "Agent not found"));
+  }
+
+  // Generate a new OTP
+  const OTP = generateOtp();
+
+  // Send the new OTP to the agent's email
+  await sendEmailVerification(email, OTP);
+
+  // Update the OTP and OTP expiry in the temporary agent record
+  tempAgent.otp = await bcrypt.hash(OTP, 10); // Hash the OTP for security
+  tempAgent.otpExpiry = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+  await tempAgent.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { email: tempAgent.accountDetails.founderOrCeo.email }, "OTP resent to your email"));
+});
+
+export { resendAgentOtp, resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword };

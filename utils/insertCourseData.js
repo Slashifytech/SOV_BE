@@ -1,22 +1,27 @@
-import mongoose from 'mongoose';
-import connectDb from '../db/index.js';
-import { Course } from '../models/course.model.js';
-import { courseData } from './courseData.js';
+// insertCourses.js
+import mongoose from "mongoose";
+import connectDb from "../db/index.js"; // Adjust this path as necessary
+import { Institute } from "../models/institute.model.js"; // Adjust this path as necessary
+import { courses } from "./courseData.js";
 
-async function insertInstitutes() {
+// Async IIFE to insert new course data into the courses field for all institutes
+(async () => {
   try {
     // Connect to the database
     await connectDb();
 
-    // Insert data into the database
-    await Course.insertMany(courseData);
-    console.log('Course inserted successfully!');
+    // Update the courses field for all institutes
+    const updateResult = await Institute.updateMany(
+      {}, // No filter, so it will update all documents
+      { $addToSet: { courses: { $each: courses } } } // Add new courses, avoiding duplicates
+    );
+
+    console.log("Number of institutes updated:", updateResult.modifiedCount);
+
   } catch (error) {
-    console.error('Error inserting Course:', error);
+    console.error("Error inserting course data:", error);
   } finally {
-    // Disconnect from the database
+    // Close the connection
     mongoose.connection.close();
   }
-}
-
-insertInstitutes();
+})();

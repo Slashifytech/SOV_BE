@@ -83,6 +83,39 @@ const CertificateUploadSchema = new Schema({
     }
 }, { _id: false });
 
+const StudentDocumentSchema = new Schema({
+    aadharCard: {
+        type:String
+    },
+    panCard: {
+        type:String
+    }
+}, { _id: false });
+
+const ParentDocumentSchema = new Schema({
+    fatherAadharCard: {
+        type:String
+    },
+    fatherPanCard: {
+        type:String
+    },
+    motherAadharCard: {
+        type:String
+    },
+    motherPanCard: {
+        type:String
+    }
+}, { _id: false });
+
+const OfferLetterAnsPassportSchema = new Schema({
+    offerLetter: {
+        type:String
+    },
+    passport: {
+        type:String
+    }
+}, { _id: false });
+
 
 // Main schema for Visa Registration
 const InstitutionSchema = new Schema({
@@ -118,6 +151,12 @@ const InstitutionSchema = new Schema({
             default: 'under review'
         },
         message: { type: String }  // Optional message field
+    },
+    courseFeeApplication:{
+        personalDetails: PersonalInformationSchema,
+        studentDocument: StudentDocumentSchema,
+        parentDocument: ParentDocumentSchema,
+        offerLetterAnsPassport:OfferLetterAnsPassportSchema 
     },
     studentInformationId: {
         type: Schema.Types.ObjectId,
