@@ -360,8 +360,8 @@ const approveStudent =  asyncHandler (async (req, res)=>{
 })
 
 const requestPasswordResetOtp = asyncHandler(async (req, res) => {
-  const payload = req.body;
 
+  const payload = req.body;
   // Validate the payload using Zod schema
   const validation = forgotPasswordSchema.safeParse(payload);
   if (!validation.success) {
@@ -375,7 +375,7 @@ const requestPasswordResetOtp = asyncHandler(async (req, res) => {
   if (payload.type === '2') {
     // Find and update in the agent model
     modelType = "Agent";
-    tempModel = await TempAgent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
+    tempModel = await Agent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
     if (!tempModel) {
       return res
         .status(404)

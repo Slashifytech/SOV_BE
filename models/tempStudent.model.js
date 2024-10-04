@@ -8,11 +8,9 @@ const phoneSchema = new Schema(
   {
     code: {
       type: String,
-      required: [true, "Phone code is required"],
     },
     number: {
       type: String,
-      required: [true, "Phone number is required"],
     },
   },
   { _id: false }
@@ -22,41 +20,32 @@ const tempStudentSchema = new Schema(
   {
     firstName: {
       type: String,
-      required: [true, "First Name is required"],
     },
     lastName: {
       type: String,
-      required: [true, "Last Name is required"],
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
       unique: true,
       trim: true,
     },
     country: {
       type: String,
-      required: [true, "Country is required"],
     },
     phone: {
       type: phoneSchema,
-      required: true,
     },
     studentType: {
       type: String,
-      required: [true, "Student Type is required"],
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
     },
     otp: {
       type: String,
-      required: true,
     },
     otpExpiry: {
       type: Date,
-      required: true,
     },
     isOtpVerified: {
       type: Boolean,
@@ -64,11 +53,10 @@ const tempStudentSchema = new Schema(
     },
     hearAbout: {
       type: String,
-      required: false,
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
   }
 );
 

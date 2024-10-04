@@ -28,7 +28,7 @@ router.route("/change-password").patch(verifyJwt, changePassword);
 router.route("/approve-student").patch(verifyAdmin, approveStudent);
 router.route("/password-reset-otp").post(requestPasswordResetOtp);
 router.route("/reset-password").post(resetPassword);
-router.route("/resend-otp").post(resendStudentOtp);
+router.route("/resend-otp-student").post(resendStudentOtp);
 router.route("/resend-otp-agent").post(resendAgentOtp);
 router.route("/verify-otp").post(verifyOtp);
 
