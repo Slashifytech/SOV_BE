@@ -21,6 +21,7 @@ import companyRouter from "./routes/company.routes.js";
 import countryRouter from "./routes/country.routes.js";
 import instituteRouter from "./routes/institute.routes.js";
 import institutionRouter from "./routes/institution.routes.js";
+import documentRouter from "./routes/document.routes.js";
 
 
 // User routes
@@ -30,5 +31,6 @@ app.use("/api/company", companyRouter);
 app.use("/api/country", countryRouter);
 app.use("/api/institute", instituteRouter);
 app.use("/api/institution", institutionRouter);
+app.use("/api/document", documentRouter);
 
 export default app;

@@ -4,9 +4,14 @@ import {
   changePassword,
   login,
   logout,
+  requestPasswordResetOtp,
+  resendAgentOtp,
+  resendStudentOtp,
+  resetPassword,
   sendAgentOtp,
   sentStudentOtp,
   verifyAgentOtp,
+  verifyOtp,
   verifyStudentOtp,
 } from "../controllers/auth.controller.js";
 import { verifyAdmin, verifyJwt } from "../middlewares/auth.middleware.js";
@@ -21,5 +26,10 @@ router.route("/login").post(login);
 router.route("/logout").post(verifyJwt, logout);
 router.route("/change-password").patch(verifyJwt, changePassword);
 router.route("/approve-student").patch(verifyAdmin, approveStudent);
+router.route("/password-reset-otp").post(requestPasswordResetOtp);
+router.route("/reset-password").post(resetPassword);
+router.route("/resend-otp-student").post(resendStudentOtp);
+router.route("/resend-otp-agent").post(resendAgentOtp);
+router.route("/verify-otp").post(verifyOtp);
 
 export default router;

@@ -105,6 +105,9 @@ const CompanyOverviewSchema = new Schema({
   businessRegistrationNumber: {
     type: String,
   },
+  businessRegistrationType: {
+    type: String,
+  },
   businessRegistrationDocument: {
     type: String, // Assume this will be a URL or file path for the document
   },

@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Zod schema for Address (fields are now required)
 const AddressSchema = z.object({
   street: z.string().nonempty("Street is required"),
   city: z.string().nonempty("City is required"),
@@ -14,13 +13,13 @@ const PersonalInformationSchema = z.object({
   fullName: z.string().nonempty("Full Name is required"),
   email: z.string().email("Invalid email address").nonempty("Email is required"),
   phoneNumber: z.string().nonempty("Phone Number is required"),
-  address: AddressSchema,  // Address fields are now required
+  address: AddressSchema,  // Address schema is required here
 });
 
 // Zod schema for Education Details
 const EducationDetailsSchema = z.object({
   educationLevel: z.enum(['Diploma', 'Post Graduate', 'Under Graduate']),
-  markSheet: z.array(z.string()).optional(),  // Array of URLs or file paths for marksheets
+  markSheet: z.array(z.string()).optional(),  // Array of URLs or file paths for marksheets, optional
 });
 
 // Zod schema for Preferences
@@ -31,21 +30,47 @@ const PreferencesSchema = z.object({
   intake: z.string().nonempty("Intake is required"),
 });
 
-// Updated Zod schema for IELTS Score (fields are required)
+// Zod schema for IELTS Score
 const IELTSSchema = z.object({
-  reading: z.number().nonnegative("Reading score must be non-negative").min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  speaking: z.number().nonnegative("Speaking score must be non-negative").min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  writing: z.number().nonnegative("Writing score must be non-negative").min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  listening: z.number().nonnegative("Listening score must be non-negative").min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  overallBand: z.number().optional(),  // Keep this optional if not required
+  reading: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
+  speaking: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
+  writing: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
+  listening: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
+  overallBand: z.number().optional(),  // Optional overall band score
 });
 
-// Zod schema for Offer Letter
+// Zod schema for PTE Score
+const PTESchema = z.object({
+  listening: z.number().optional(),
+  reading: z.number().optional(),
+  writing: z.number().optional(),
+  speaking: z.number().optional(),
+  overallBands: z.number().optional(),
+});
+
+// Zod schema for TOEFL Score
+const TOEFLSchema = z.object({
+  listening: z.number().optional(),
+  reading: z.number().optional(),
+  writing: z.number().optional(),
+  speaking: z.number().optional(),
+  overallBands: z.number().optional(),
+});
+
+// Zod schema for Document Upload
+const CertificateUploadSchema = z.object({
+  url: z.string().url("Invalid URL").optional(),
+});
+
+// Zod schema for the Offer Letter section
 export const OfferLetterSchema = z.object({
   personalInformation: PersonalInformationSchema,
   educationDetails: EducationDetailsSchema,
   preferences: PreferencesSchema,
-  ieltsScore: IELTSSchema,  // Required because all fields inside it are required
+  ieltsScore: IELTSSchema,
+  ptes: PTESchema.optional(),  // PTE score section, optional
+  toefl: TOEFLSchema.optional(),  // TOEFL score section, optional
+  certificate: CertificateUploadSchema.optional(),
   studentInformationId: z.string().nonempty("studentInformationId is required"),
 });
 
@@ -60,13 +85,46 @@ const PersonalInformationGICSchema = z.object({
 
 // Zod schema for Document Upload
 const DocumentUploadSchema = z.object({
-  offerLetter: z.string().nonempty("Offer Letter is required"),  // Required field
-  letterOfAcceptance: z.string().optional(),  // Optional URL or file path for the letter of acceptance
+  offerLetter: z.string().nonempty("Offer Letter is required"),  // Required field for offer letter
+  feeReceipt: z.string().nonempty("Fee Receipt is required"),  // Required field for fee receipt
+  gicLetter: z.string().nonempty("GIC Letter is required"),  // Required field for GIC letter
+  medical: z.string().nonempty("Medical document is required"),  // Required field for medical
+  pcc: z.string().nonempty("Police Clearance Certificate (PCC) is required"),  // Required field for PCC
+  pal: z.string().nonempty("Pre-Arrival Letter (PAL) is required"),  // Required field for PAL
+  ielts: z.string().nonempty("IELTS certificate is required"),  // Required field for IELTS certificate
 });
 
 // Zod schema for GIC
 export const GICSchema = z.object({
   personalDetails: PersonalInformationGICSchema,
   documentUpload: DocumentUploadSchema,
+  studentInformationId: z.string().nonempty("studentInformationId is required"),
+});
+
+const StudentDocumentSchema = z.object({
+  aadharCard: z.string().optional(),
+  panCard: z.string().optional(),
+});
+
+// Zod schema for Parent Document
+const ParentDocumentSchema = z.object({
+  fatherAadharCard: z.string().optional(),
+  fatherPanCard: z.string().optional(),
+  motherAadharCard: z.string().optional(),
+  motherPanCard: z.string().optional(),
+});
+
+// Zod schema for Offer Letter and Passport
+const OfferLetterAnsPassportSchema = z.object({
+  offerLetter: z.string().optional(),
+  passport: z.string().optional(),
+});
+
+// Main Zod schema for Course Fee Application
+export const CourseFeeApplicationSchema = z.object({
+  personalDetails:PersonalInformationSchema,
+  studentDocument: StudentDocumentSchema,
+  parentDocument: ParentDocumentSchema,
+  offerLetterAnsPassport: OfferLetterAnsPassportSchema,
   studentInformationId: z.string().nonempty("studentInformationId is required"),
 });
