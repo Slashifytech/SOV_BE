@@ -484,7 +484,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 
-export const resetPassword = asyncHandler(async (req, res) => {
+ const resetPassword = asyncHandler(async (req, res) => {
   const { email, type, otp, newPassword } = req.body;
 
   // Validate the payload using Zod schema
