@@ -38,8 +38,8 @@ const sendEmailVerification = async (email, opt) => {
   }
 };
 
-const sendAuthData = async (email, data) => {
-
+const sendAuthData = async (email, password) => {
+  console.log(email, password);
   const mailOptions = {
     from: {
       name: "SOV",
@@ -47,7 +47,7 @@ const sendAuthData = async (email, data) => {
     },
     to: email,
     subject: "Account Credentials",
-    text: `Your Credentials is ${{email: data.email, password: data.password}}`,
+    text: `Your Credentials is ${{'Email': email, "password": password}}`,
   };
 
   try {
