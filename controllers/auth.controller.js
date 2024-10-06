@@ -484,7 +484,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 
- const resetPassword = asyncHandler(async (req, res) => {
+const resetPassword = asyncHandler(async (req, res) => {
   const { email, type, otp, newPassword } = req.body;
 
   // Validate the payload using Zod schema
@@ -497,19 +497,28 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   let tempModel;
   let userModel;
+  let emailQuery = {};
 
   if (type === '2') {
-    // Type 2 is Agent
+    // Type 2 is Agent - Query structure adjusted for Agent model
     tempModel = TempAgent;
     userModel = Agent;
+    emailQuery = { "accountDetails.founderOrCeo.email": email }; // Adjusted query for Agent
   } else if (type === '3') {
-    // Type 3 is Student
+    // Type 3 is Student - Adjust query if email is nested
     tempModel = TempStudent;
     userModel = Student;
+    
+    // Assuming `TempStudent` has the email nested under `studentDetails.email`
+    emailQuery = { "studentDetails.email": email }; // Adjust according to actual schema structure
+  } else {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, "Invalid type provided"));
   }
 
-  // Find the temporary user (Agent/Student) by email and OTP
-  const tempUser = await tempModel.findOne({ email });
+  // Find the temporary user (Agent/Student) by email
+  const tempUser = await tempModel.findOne(emailQuery);
   if (!tempUser) {
     return res
       .status(404)
@@ -525,7 +534,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
   }
 
   // Find the actual user (Agent/Student) by email in their respective model
-  const user = await userModel.findOne({ email });
+  const user = await userModel.findOne(emailQuery);
   if (!user) {
     return res
       .status(404)
@@ -534,14 +543,14 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   // Encrypt the new password
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  
+
   // Update the password and mark OTP as verified in userModel
   user.password = hashedPassword;
   user.isOtpVerified = true; // Mark as OTP verified if applicable
   await user.save();
 
   // Optionally, you may want to delete the temporary OTP record from the Temp collection
-  await tempModel.deleteOne({ email });
+  await tempModel.deleteOne(emailQuery);
 
   return res
     .status(200)
