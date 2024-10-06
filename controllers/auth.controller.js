@@ -18,6 +18,8 @@ import { generateOtp } from "../utils/commonFuntions.js";
 import { sendAuthData, sendEmailVerification } from "../utils/sendMail.js";
 import { TempStudent } from "../models/tempStudent.model.js";
 import { TempAgent } from "../models/tempAgent.model.js";
+import crypto from 'crypto'; // Import crypto for generating a unique token
+
 
 
 const sentStudentOtp = asyncHandler(async (req, res) => {
@@ -624,4 +626,132 @@ const resendAgentOtp = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { email: tempAgent.accountDetails.founderOrCeo.email }, "OTP resent to your email"));
 });
 
-export { resendAgentOtp, resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword, verifyOtp };
+// Store pending email changes in memory (or use a cache/database)
+const pendingEmailChanges = {};
+const requestChangeEmail = asyncHandler(async (req, res) => {
+  const { newEmail } = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = changeEmailSchema.safeParse({ newEmail });
+  if (!validation.success) {
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  const userId = req.user.id; // Assuming you have user ID from authenticated user
+  const userRole = req.user.role; // Assuming role is part of the user object
+
+  // Determine if the user is an agent or a student
+  let user;
+  if (userRole === '2') {
+    // Check if the agent exists
+    user = await Agent.findById(userId);
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "Agent not found"));
+    }
+  } else if (userRole === '3') {
+    // Check if the student exists
+    user = await Student.findById(userId);
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "Student not found"));
+    }
+  } else {
+    return res.status(403).json(new ApiResponse(403, {}, "Access denied"));
+  }
+
+  // Generate an OTP
+  const OTP = generateOtp();
+
+  // Send the OTP to the new email
+  await sendEmailVerification(newEmail, OTP);
+
+  // Hash the OTP for security and set expiry
+  const hashedOtp = await bcrypt.hash(OTP, 10);
+  const expiry = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+
+  // Generate a unique token for the new email change request
+  const token = crypto.randomBytes(16).toString('hex');
+
+  // Store the pending email change with the OTP and expiry
+  pendingEmailChanges[token] = {
+    userId,
+    newEmail,
+    otp: hashedOtp,
+    expiry,
+  };
+
+  return res.status(200).json(new ApiResponse(200, {}, "OTP sent to your new email. Please verify to update your email address."));
+});
+
+const verifyAndChangeEmail = asyncHandler(async (req, res) => {
+  const { token, otp } = req.body;
+
+  // Validate the payload using Zod schema
+  const validation = z.object({
+    token: z.string().min(1, "Token is required"),
+    otp: z.string().min(6, "OTP must be at least 6 characters long"),
+  }).safeParse({ token, otp });
+
+  if (!validation.success) {
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
+  }
+
+  // Check if the token exists in pendingEmailChanges
+  const pendingChange = pendingEmailChanges[token];
+  if (!pendingChange) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired token."));
+  }
+
+  const { userId, newEmail, otp: hashedOtp, expiry } = pendingChange;
+
+  // Check if OTP is expired
+  if (Date.now() > expiry) {
+    delete pendingEmailChanges[token]; // Remove expired request
+    return res.status(400).json(new ApiResponse(400, {}, "OTP has expired. Please request a new one."));
+  }
+
+  // Verify the OTP
+  const isOtpCorrect = await bcrypt.compare(otp, hashedOtp);
+  if (!isOtpCorrect) {
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid OTP. Please try again."));
+  }
+
+  // Determine if the user is an agent or a student
+  const userRole = req.user.role; // Assuming role is part of the user object
+  let user;
+  if (userRole === '2') {
+    // Check if the agent exists
+    user = await Agent.findById(userId);
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "Agent not found"));
+    }
+    
+    // Update the email in accountDetails
+    user.accountDetails.founderOrCeo.email = newEmail; // Update the email to the new one
+  } else if (userRole === '3') {
+    // Check if the student exists
+    user = await Student.findById(userId);
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "Student not found"));
+    }
+
+    // Update the email (if applicable)
+    user.email = newEmail; // Assuming students have a direct email field
+  } else {
+    return res.status(403).json(new ApiResponse(403, {}, "Access denied"));
+  }
+
+  // Save the updated user
+  await user.save();
+
+  // Cleanup: Remove the pending change from memory
+  delete pendingEmailChanges[token];
+
+  return res.status(200).json(new ApiResponse(200, { email: user.accountDetails.founderOrCeo.email }, "Email updated successfully."));
+});
+
+
+
+
+
+
+export {requestChangeEmail, verifyAndChangeEmail, resendAgentOtp, resendStudentOtp, verifyStudentOtp, verifyAgentOtp, sendAgentOtp, login, logout, changePassword, approveStudent, sentStudentOtp, requestPasswordResetOtp, resetPassword, verifyOtp };

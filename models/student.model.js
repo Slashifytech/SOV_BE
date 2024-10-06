@@ -22,62 +22,69 @@ const studentSchema = new Schema(
   {
     firstName: {
       type: String,
-      required: [true, "First Name is required"],
     },
     lastName: {
       type: String,
-      required: [true, "Last Name is required"],
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
       unique: true,
       trim: true,
     },
     country: {
       type: String,
-      required: [true, "Country is required"],
     },
     phone: {
       type: phoneSchema,
-      required: true,
     },
     studentType: {
       type: String,
-      required: [true, "Student Type is required"],
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
     },
-    approved: {
-      type: Boolean,
-      default: false,
+    otp: {
+      type: String, // Store OTP (can be hashed for extra security)
     },
-    hearAbout: {
-      type: String,
-      required: false,
+    otpExpiry: {
+      type: Date,  // OTP expiration timestamp
     },
     isOtpVerified: {
       type: Boolean,
       default: false,
     },
+    hearAbout: {
+      type: String,
+    },
   },
   {
-    timestamps: true,
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
   }
 );
 
-// Encrypt password before saving the student
+// Password encryption before saving the student
 studentSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
+// OTP encryption before saving (optional but can enhance security)
+studentSchema.pre("save", async function (next) {
+  if (this.otp && this.isModified("otp")) {
+    this.otp = await bcrypt.hash(this.otp, 10);
+  }
+  next();
+});
+
 // Password comparison method
 studentSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
+};
+
+// OTP comparison method
+studentSchema.methods.isOtpCorrect = async function (otp) {
+  return await bcrypt.compare(otp, this.otp);
 };
 
 export const Student = mongoose.model("Student", studentSchema);

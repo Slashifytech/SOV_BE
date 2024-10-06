@@ -4,6 +4,7 @@ import {
   changePassword,
   login,
   logout,
+  requestChangeEmail,
   requestPasswordResetOtp,
   resendAgentOtp,
   resendStudentOtp,
@@ -11,6 +12,7 @@ import {
   sendAgentOtp,
   sentStudentOtp,
   verifyAgentOtp,
+  verifyAndChangeEmail,
   verifyOtp,
   verifyStudentOtp,
 } from "../controllers/auth.controller.js";
@@ -31,5 +33,7 @@ router.route("/reset-password").post(resetPassword);
 router.route("/resend-otp-student").post(resendStudentOtp);
 router.route("/resend-otp-agent").post(resendAgentOtp);
 router.route("/verify-otp").post(verifyOtp);
+router.route("/request-change-email").post(verifyJwt,requestChangeEmail);
+router.route("/change-email").post(verifyJwt, verifyAndChangeEmail);
 
 export default router;
