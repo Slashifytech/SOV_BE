@@ -1,6 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Student } from "../models/student.model.js";
 import bcrypt from "bcrypt";
 import { Agent } from "../models/agent.model.js";
 import {
@@ -19,6 +18,7 @@ import { sendAuthData, sendEmailVerification } from "../utils/sendMail.js";
 import { TempStudent } from "../models/tempStudent.model.js";
 import { TempAgent } from "../models/tempAgent.model.js";
 import crypto from 'crypto'; // Import crypto for generating a unique token
+import { Student } from "../models/student.model.js";
 
 
 
@@ -208,37 +208,43 @@ const login = asyncHandler(async (req, res) => {
 
   let user;
   let loggedInUser;
+
   if (payload.role === "3") {
-    user = await Student.findOne({ email: payload.email });
-    if (!user || !user.approved ) {
+    console.log("Payload email:", payload.email.trim().toLowerCase());
+    
+    // Query user by email (ensure email is trimmed and lowercased)
+    user = await Student.findOne({ email: payload.email.trim().toLowerCase() });
+    console.log("Queried user:", user);
+    
+    if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
+
+    // Check if the password is correct
     const isPasswordValid = await user.isPasswordCorrect(payload.password);
     if (!isPasswordValid) {
       return res.status(400).json(new ApiResponse(400, {}, "Invalid password"));
     }
-    loggedInUser = await Student.findById(user._id).select(
-      "-password -refreshToken"
-    );
+
+    loggedInUser = await Student.findById(user._id).select("-password -refreshToken");
+
   } else if (payload.role === "2") {
-        
     user = await Agent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
-     
-    if (!user || !user.approved) {
+    
+    if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
-    // console.log(user.password)
+
+    // Check password for agent
     const isPasswordValid = await bcrypt.compare(payload.password, user.password);
     if (!isPasswordValid) {
       return res.status(400).json(new ApiResponse(400, {}, "Invalid password"));
     }
-    loggedInUser = await Agent.findById(user._id).select(
-      "-password -refreshToken"
-    );
+
+    loggedInUser = await Agent.findById(user._id).select("-password -refreshToken");
+
   } else {
-    return res.status(400).json(
-      new ApiResponse(400, {}, "Invalid user type")
-    )
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid user type"));
   }
 
   let userData = {
@@ -246,13 +252,15 @@ const login = asyncHandler(async (req, res) => {
     email: user.email,
     role: payload.role,
   };
+
   const { accessToken } = await generateTokens(userData);
 
-  // set cookies
+  // Set cookies
   const options = {
     httpOnly: true,
     secure: true,
   };
+  
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -267,6 +275,7 @@ const login = asyncHandler(async (req, res) => {
       )
     );
 });
+
 
 const logout = asyncHandler(async (req, res) => {
   const options = {
@@ -512,7 +521,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     userModel = Student;
     
     // Assuming `TempStudent` has the email nested under `studentDetails.email`
-    emailQuery = { "studentDetails.email": email }; // Adjust according to actual schema structure
+    emailQuery = { "email": email }; // Adjust according to actual schema structure
   } else {
     return res
       .status(400)
@@ -521,6 +530,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   // Find the temporary user (Agent/Student) by email
   const tempUser = await tempModel.findOne(emailQuery);
+  console.log(tempUser, "++++++++++++++++++++++++")
   if (!tempUser) {
     return res
       .status(404)
@@ -544,10 +554,10 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   // Encrypt the new password
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  // const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   // Update the password and mark OTP as verified in userModel
-  user.password = hashedPassword;
+  user.password = newPassword;
   user.isOtpVerified = true; // Mark as OTP verified if applicable
   await user.save();
 

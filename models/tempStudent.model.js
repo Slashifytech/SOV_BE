@@ -61,11 +61,11 @@ const tempStudentSchema = new Schema(
 );
 
 // Password encryption before saving the student
-tempStudentSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+// tempStudentSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
 
 // OTP encryption before saving (optional but can enhance security)
 tempStudentSchema.pre("save", async function (next) {

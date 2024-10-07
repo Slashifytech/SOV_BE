@@ -81,10 +81,10 @@ const agentSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    approved: {
-      type: Boolean,
-      default: false,
-    },
+    // approved: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     role: {
       type: String,
       default: '2', // [0-admin, 1-subAdmin, 2-agent]
@@ -96,11 +96,11 @@ const agentSchema = new Schema(
 );
 
 // Password encryption before saving the agent
-agentSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+// agentSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
 
 // OTP encryption before saving
 agentSchema.pre("save", async function (next) {
