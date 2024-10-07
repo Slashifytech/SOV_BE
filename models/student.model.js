@@ -28,12 +28,8 @@ const studentSchema = new Schema(
       type: String,
       required: [true, "Last Name is required"],
     },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      trim: true,
-    },
+    email: { type: String, unique: true, trim: true, lowercase: true },
+
     country: {
       type: String,
       required: [true, "Country is required"],
@@ -50,10 +46,10 @@ const studentSchema = new Schema(
       type: String,
       required: [true, "Password is required"],
     },
-    approved: {
-      type: Boolean,
-      default: false,
-    },
+    // approved: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     hearAbout: {
       type: String,
       required: false,

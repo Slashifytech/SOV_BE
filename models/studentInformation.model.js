@@ -197,7 +197,17 @@ const StudentInformationSchema = new Schema(
     pageCount: {
       type: Number,
       default: 1
+    },
+    pageStatus:{
+      status:{
+        type:String,
+        default: "registering"
+      },
+      message:{
+        type: String,
+      }
     }
+
   },
   {
     timestamps: true,

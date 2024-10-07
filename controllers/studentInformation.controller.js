@@ -135,7 +135,10 @@ const studentPreference = asyncHandler(async (req, res) => {
           preferredLevelOfEducation: payload.preferredLevelOfEducation,
           preferredInstitution: payload.preferredInstitution,
         },
-        pageCount: 3
+        pageCount: 3,
+        pageStatus:{
+          status:"not approved"
+        }
       },
     },
     { new: true }

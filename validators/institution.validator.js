@@ -18,8 +18,11 @@ const PersonalInformationSchema = z.object({
 
 // Zod schema for Education Details
 const EducationDetailsSchema = z.object({
-  educationLevel: z.enum(['Diploma', 'Post Graduate', 'Under Graduate']),
-  markSheet: z.array(z.string()).optional(),  // Array of URLs or file paths for marksheets, optional
+  educationLevel: z.enum(['Diploma', 'Post Graduate', 'Under Graduate']),  // Ensures only the allowed values are used
+  markSheet10: z.string().optional(), // Optional string for 10th marksheet
+  markSheet12: z.string().optional(), // Optional string for 12th marksheet
+  markSheetUnderGraduate: z.string().optional(), // Optional string for undergraduate marksheet
+  markSheetPostGraduate: z.string().optional(), // Optional string for postgraduate marksheet
 });
 
 // Zod schema for Preferences

@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-
 // Agent schema for agent sign-up
 const agentSchema = new Schema(
   {
@@ -72,13 +71,23 @@ const agentSchema = new Schema(
       type: String,
       required: [true, "Password is required"],
     },
-    approved: {
+    otp: {
+      type: String, // Store OTP as a hashed value
+    },
+    otpExpiry: {
+      type: Date,
+    },
+    isOtpVerified: {
       type: Boolean,
       default: false,
     },
+    // approved: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     role: {
       type: String,
-      default: '2' // [0-admin, 1-subAdmin, 2-agent]
+      default: '2', // [0-admin, 1-subAdmin, 2-agent]
     }
   },
   {
@@ -87,15 +96,28 @@ const agentSchema = new Schema(
 );
 
 // Password encryption before saving the agent
+// agentSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
+
+// OTP encryption before saving
 agentSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  if (this.otp && this.isModified("otp")) {
+    this.otp = await bcrypt.hash(this.otp, 10);
+  }
   next();
 });
 
 // Password verification method
 agentSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
+};
+
+// OTP verification method
+agentSchema.methods.isOtpCorrect = async function (otp) {
+  return await bcrypt.compare(otp, this.otp);
 };
 
 export const Agent = mongoose.model("Agent", agentSchema);

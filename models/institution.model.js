@@ -24,10 +24,18 @@ const EducationDetailsSchema = new Schema({
         // enum: ['Diploma', 'Post Graduate', 'Under Graduate'], 
         required: true 
     },
-    markSheet: { 
-        type: [String],  // Array of strings to store multiple URLs or file paths
-        default: []      // Optional: initialize as an empty array if no marksheets are provided
-    }
+    markSheet10: { 
+        type: String,  // Array of strings to store multiple URLs or file paths
+    },
+    markSheet12: { 
+        type: String,  // Array of strings to store multiple URLs or file paths
+    },
+    markSheetUnderGraduate: { 
+        type: String,  // Array of strings to store multiple URLs or file paths
+    },
+    markSheetPostGraduate: { 
+        type: String,  // Array of strings to store multiple URLs or file paths
+    },
 });
 
 // Schema for Preferences
@@ -79,9 +87,10 @@ const TOEFLSchema = new Schema({
 // Schema for Document Upload
 const CertificateUploadSchema = new Schema({
     url: {
-        type:String
+        type: [String],  // Array of strings
     }
 }, { _id: false });
+
 
 const StudentDocumentSchema = new Schema({
     aadharCard: {
