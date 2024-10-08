@@ -220,6 +220,7 @@ const registerReferences = asyncHandler(async (req, res) => {
   // Update the references for the company
   company.references = result.data;
   company.pageCount = 6;
+  company.pageStatus.status = 'notapproved'
   // Save the updated company details
   await company.save();
 

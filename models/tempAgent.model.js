@@ -96,11 +96,11 @@ const tempAgentSchema = new Schema(
 );
 
 // Password encryption before saving the agent
-tempAgentSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+// tempAgentSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
 
 // OTP encryption before saving (optional but can enhance security)
 tempAgentSchema.pre("save", async function (next) {

@@ -137,7 +137,7 @@ const studentPreference = asyncHandler(async (req, res) => {
         },
         pageCount: 3,
         pageStatus:{
-          status:"not approved"
+          status:"notapproved"
         }
       },
     },
