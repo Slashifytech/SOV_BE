@@ -4,38 +4,53 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 
 
-const getTotalApplicationCount = asyncHandler(async(req, res)=>{
+const getTotalApplicationCount = asyncHandler(async (req, res) => {
     if (req.user.role !== '2') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view student information"));
     }
 
-    // Calculate the date 7 days ago
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Optional year filter from query parameters
+    const { year } = req.query;
+
+    let dateFilter = {};
+    
+    if (year) {
+        // If year is provided, set date range for that year (start of the year to end of the year)
+        const startOfYear = new Date(`${year}-01-01T00:00:00Z`);
+        const endOfYear = new Date(`${year}-12-31T23:59:59Z`);
+        dateFilter.createdAt = { $gte: startOfYear, $lte: endOfYear };
+    } else {
+        // Calculate the date 7 days ago if no year is provided
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        dateFilter.createdAt = { $gte: sevenDaysAgo };
+    }
 
     // Get total applications in the database
     const totalRecords = await StudentInformation.countDocuments({
-        agentId: req.user.id
-    });
-
-    // Get total applications inserted in the last 7 days
-    const insertedRecordsLast7Days = await StudentInformation.countDocuments({
         agentId: req.user.id,
-        createdAt: { $gte: sevenDaysAgo }
+        ...dateFilter
     });
 
-    // Calculate the percentage of applications inserted in the last 7 days
+    // Get total applications inserted in the last 7 days or in the specified year
+    const insertedRecords = await StudentInformation.countDocuments({
+        agentId: req.user.id,
+        ...dateFilter
+    });
+
+    // Calculate the percentage of applications inserted in the last 7 days or year
     const insertionPercentage = totalRecords > 0 
-        ? ((insertedRecordsLast7Days / totalRecords) * 100).toFixed(2) 
+        ? ((insertedRecords / totalRecords) * 100).toFixed(2) 
         : 0;
 
     // Return the total count and percentage
     return res.status(200).json(new ApiResponse(200, { 
         totalRecords, 
-        insertedRecordsLast7Days, 
+        insertedRecords, 
         insertionPercentage 
-    }, "Percentage of applications inserted in the last 7 days fetched successfully"));
+    }, `Percentage of applications inserted ${year ? `in the year ${year}` : 'in the last 7 days'} fetched successfully`));
 });
+
 
 const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     // Ensure the user role is 'AGENT'
