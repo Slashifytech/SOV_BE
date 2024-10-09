@@ -246,6 +246,9 @@ const CompanySchema = new Schema({
     message:{
       type: String,
     }
+  },
+  agId: {
+    type: String
   }
 }, {
   timestamps: true,  // Automatically add createdAt and updatedAt fields

@@ -4,6 +4,24 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { BankDetailsSchema, CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema, ReferenceSchema } from "../validators/company.validator.js";
 import { z } from 'zod';
 
+
+// Function to generate unique Application ID
+async function generateAgentId() {
+  const today = new Date();
+
+  // Format the date components (DDMMYY)
+  const day = today.getDate().toString().padStart(2, '0');
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const year = today.getFullYear().toString().slice(2);
+
+  // Get the current document count and format it as a two-digit number
+  const count = await Institution.countDocuments().exec();  // Ensure query execution with .exec()
+  const countStr = (count + 1).toString().padStart(2, '0');
+
+  // Construct and return the Application ID (e.g., AP-24092601)
+  return `AG-${day}${month}${year}${countStr}`;
+}
+
 //register company
 const registerCompany = asyncHandler(async (req, res) => {
     const { body: payload } = req;
@@ -218,6 +236,7 @@ const registerReferences = asyncHandler(async (req, res) => {
   }
 
   // Update the references for the company
+  company.agId = generateAgentId();
   company.references = result.data;
   company.pageCount = 6;
   company.pageStatus.status = 'notapproved'

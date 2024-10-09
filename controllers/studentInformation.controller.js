@@ -9,6 +9,21 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
+async function generateStudentId() {
+  const today = new Date();
+
+  // Format the date components (DDMMYY)
+  const day = today.getDate().toString().padStart(2, '0');
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const year = today.getFullYear().toString().slice(2);
+
+  // Get the current document count and format it as a two-digit number
+  const count = await Institution.countDocuments().exec();  // Ensure query execution with .exec()
+  const countStr = (count + 1).toString().padStart(2, '0');
+
+  // Construct and return the Application ID (e.g., AP-24092601)
+  return `ST-${day}${month}${year}${countStr}`;
+}
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
   const { body: payload } = req;
@@ -138,7 +153,8 @@ const studentPreference = asyncHandler(async (req, res) => {
         pageCount: 3,
         pageStatus:{
           status:"notapproved"
-        }
+        },
+        stId: generateStudentId()
       },
     },
     { new: true }
