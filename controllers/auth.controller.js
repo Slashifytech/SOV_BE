@@ -61,7 +61,7 @@ const sentStudentOtp = asyncHandler(async (req, res) => {
     },
     studentType: payload.studentType,
     password: payload.password, // Hash the password if needed
-    hearAbout: payload.hearAbout || null,
+    hearAbout: payload.hearAbout,
     otp: OTP, // Save OTP
     otpExpiry: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
   });
