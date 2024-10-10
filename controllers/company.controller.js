@@ -15,7 +15,7 @@ async function generateAgentId() {
   const year = today.getFullYear().toString().slice(2);
 
   // Get the current document count and format it as a two-digit number
-  const count = await Institution.countDocuments().exec();  // Ensure query execution with .exec()
+  const count = await Company.countDocuments().exec();  // Ensure query execution with .exec()
   const countStr = (count + 1).toString().padStart(2, '0');
 
   // Construct and return the Application ID (e.g., AP-24092601)
