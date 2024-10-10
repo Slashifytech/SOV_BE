@@ -237,6 +237,18 @@ const CompanySchema = new Schema({
   pageCount: {
     type: Number,
     default: 1
+  },
+  pageStatus:{
+    status:{
+      type:String,
+      default: "registering"
+    },
+    message:{
+      type: String,
+    }
+  },
+  agId: {
+    type: String
   }
 }, {
   timestamps: true,  // Automatically add createdAt and updatedAt fields

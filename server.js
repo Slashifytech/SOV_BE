@@ -23,6 +23,7 @@ import instituteRouter from "./routes/institute.routes.js";
 import institutionRouter from "./routes/institution.routes.js";
 import documentRouter from "./routes/document.routes.js";
 import withdrawalRouter from "./routes/withdrawal.routes.js";
+import agentRouter from "./routes/agentDashboard.controller.js";
 
 
 // User routes
@@ -34,5 +35,6 @@ app.use("/api/institute", instituteRouter);
 app.use("/api/institution", institutionRouter);
 app.use("/api/document", documentRouter);
 app.use("/api/withdrawal", withdrawalRouter);
+app.use("/api/agent", agentRouter);
 
 export default app;

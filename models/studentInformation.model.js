@@ -206,6 +206,9 @@ const StudentInformationSchema = new Schema(
       message:{
         type: String,
       }
+    },
+    stId: {
+      type: String
     }
 
   },
