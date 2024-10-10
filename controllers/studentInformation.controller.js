@@ -225,9 +225,9 @@ const updateStudentPersonalInformation = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, updatedStudentInfo, "Personal Information updated successfully"));
 });
 
-const getAllAgentStudent = asyncHandler(async(req, res)=>{
-  const { page = 1, limit = 10 } = req.query; // Set default values for pagination
-  const agentId = req.user.id; 
+const getAllAgentStudent = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, email, stId, firstName, lastName, phone } = req.query; // Add filterable fields
+  const agentId = req.user.id;
 
   // Check if the user role is authorized
   if (req.user.role !== '2') {
@@ -236,14 +236,33 @@ const getAllAgentStudent = asyncHandler(async(req, res)=>{
       .json(new ApiResponse(403, {}, "Unauthorized access: Only agents can fetch student data"));
   }
 
-  // Fetch all students where agentId matches req.user.id with pagination
-  const allStudents = await StudentInformation.find({ agentId })
+  // Build the query object dynamically based on the provided filters
+  const query = { agentId };
+
+  if (email) {
+    query['personalInformation.email'] = email;
+  }
+  if (stId) {
+    query.stId = stId;
+  }
+  if (firstName) {
+    query['personalInformation.firstName'] = firstName;
+  }
+  if (lastName) {
+    query['personalInformation.lastName'] = lastName;
+  }
+  if (phone) {
+    query['personalInformation.phone.phone'] = phone; // Match phone number
+  }
+
+  // Fetch all students where agentId matches req.user.id and apply filters with pagination
+  const allStudents = await StudentInformation.find(query)
     .select("-__v") // Exclude the version field
     .limit(parseInt(limit)) // Limit the number of results per page
     .skip((parseInt(page) - 1) * parseInt(limit)); // Skip results for pagination
 
-  // Get total count of students
-  const totalStudents = await StudentInformation.countDocuments({ agentId });
+  // Get the total count of students matching the query
+  const totalStudents = await StudentInformation.countDocuments(query);
 
   // Check if any students exist for this agent
   if (!allStudents.length) {
@@ -265,6 +284,7 @@ const getAllAgentStudent = asyncHandler(async(req, res)=>{
     .status(200)
     .json(new ApiResponse(200, { students: allStudents, pagination }, "Students fetched successfully"));
 });
+
 
 const getStudentFormById = asyncHandler(async (req, res) => {
   const { formId } = req.params;
