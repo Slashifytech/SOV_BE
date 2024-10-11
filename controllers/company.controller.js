@@ -236,7 +236,7 @@ const registerReferences = asyncHandler(async (req, res) => {
   }
 
   // Update the references for the company
-  company.agId = generateAgentId();
+  company.agId = await generateAgentId();
   company.references = result.data;
   company.pageCount = 6;
   company.pageStatus.status = 'notapproved'
