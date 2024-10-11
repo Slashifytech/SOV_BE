@@ -139,6 +139,8 @@ const studentPreference = asyncHandler(async (req, res) => {
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
 
+  const stId = await generateStudentId();
+
   await StudentInformation.findOneAndUpdate(
     { _id: formId },
     {
@@ -154,7 +156,7 @@ const studentPreference = asyncHandler(async (req, res) => {
         pageStatus:{
           status:"notapproved"
         },
-        stId: await generateStudentId()
+        stId: stId
       },
     },
     { new: true }
