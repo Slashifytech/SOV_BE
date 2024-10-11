@@ -154,7 +154,7 @@ const studentPreference = asyncHandler(async (req, res) => {
         pageStatus:{
           status:"notapproved"
         },
-        stId: generateStudentId()
+        stId: await generateStudentId()
       },
     },
     { new: true }
