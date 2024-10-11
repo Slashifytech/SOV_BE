@@ -16,8 +16,8 @@ const transporter = nodemailer.createTransport({
 
 const sendEmailVerification = async (email, opt) => {
   // Debugging output
-  console.log("Sender Email:", process.env.SENDER_MAIL);
-  console.log("App Password:", process.env.APP_PASSWORD);
+  // console.log("Sender Email:", process.env.SENDER_MAIL);
+  // console.log("App Password:", process.env.APP_PASSWORD);
 
   const mailOptions = {
     from: {
@@ -32,14 +32,14 @@ const sendEmailVerification = async (email, opt) => {
   try {
     // Send the email
     const mail = await transporter.sendMail(mailOptions);
-    console.log("Mail sent successfully:", mail);
+    // console.log("Mail sent successfully:", mail);
   } catch (error) {
     console.error("Error sending email:", error);
   }
 };
 
 const sendAuthData = async (email, password) => {
-  console.log(email, password);
+  // console.log(email, password);
   const mailOptions = {
     from: {
       name: "SOV",
@@ -53,7 +53,7 @@ const sendAuthData = async (email, password) => {
   try {
     // Send the email
     const mail = await transporter.sendMail(mailOptions);
-    console.log("Mail sent successfully:", mail);
+    // console.log("Mail sent successfully:", mail);
   } catch (error) {
     console.error("Error sending email:", error);
   }

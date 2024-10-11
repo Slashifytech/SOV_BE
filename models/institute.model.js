@@ -13,9 +13,6 @@ const InstituteSchema = new Schema({
     required: true,
     trim: true,
   },
-  courses: {
-    type: [String]
-  }
 }, {
   timestamps: true,  // Automatically add createdAt and updatedAt fields
 });
