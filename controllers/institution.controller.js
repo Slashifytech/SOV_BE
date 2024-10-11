@@ -140,6 +140,20 @@ const getAllApplications = asyncHandler(async (req, res) => {
         // Add country filter for offerLetter
         query['offerLetter.preferences.country'] = { $regex: req.query.country, $options: 'i' };
     }
+    
+    // Add status filter if provided
+    if (req.query.status) {
+        // Use $in to allow for multiple status values
+        const validStatuses = ['underreview', 'completed', 'reject', 'pending', 'approved'];
+        if (validStatuses.includes(req.query.status)) {
+            query.$or = [
+                { 'offerLetter.status': req.query.status },
+                { 'gic.status': req.query.status }
+            ];
+        } else {
+            return res.status(400).json(new ApiResponse(400, {}, "Invalid status filter provided."));
+        }
+    }
 
     // If there are any OR conditions, merge them with the main query using $or
     if (orConditions.length > 0) {
