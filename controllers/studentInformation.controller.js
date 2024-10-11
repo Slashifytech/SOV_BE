@@ -38,16 +38,24 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
   const { personalInformation, passportDetails } = validation.data;
   const idField = req.user.role === '2' ? 'agentId' : 'studentId';
 
-  // Check if email, phone, and passport number already exist
-  const existingRecord = await StudentInformation.findOne({
-       "personalInformation.phone.phone": personalInformation.phone.phone ,
-  });   
-   
+  // Check if phone number already exists
+  const existingRecordByPhone = await StudentInformation.findOne({
+    "personalInformation.phone.phone": personalInformation.phone.phone,
+  });
 
+  // Check if email already exists
+  const existingRecordByEmail = await StudentInformation.findOne({
+    "personalInformation.email": personalInformation.email,
+  });
 
-  // If record exists but is associated with another user, deny access
-  if (existingRecord && existingRecord[idField]?.toString() !== req.user.id) {
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: You are not allowed to update this record"));
+  // If phone number exists but is associated with another user, deny access
+  if (existingRecordByPhone && existingRecordByPhone[idField]?.toString() !== req.user.id) {
+    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: Phone number already associated with another user"));
+  }
+
+  // If email exists but is associated with another user, deny access
+  if (existingRecordByEmail && existingRecordByEmail[idField]?.toString() !== req.user.id) {
+    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: Email already associated with another user"));
   }
 
   // Prepare data to save or update
@@ -63,10 +71,10 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
     pageCount: 1,
   };
 
-  if (existingRecord) {
+  if (existingRecordByPhone) {
     // Update the existing record
     const updatedRecord = await StudentInformation.findOneAndUpdate(
-      { _id: existingRecord._id },
+      { _id: existingRecordByPhone._id },
       { $set: data },
       { new: true }
     );
@@ -139,6 +147,8 @@ const studentPreference = asyncHandler(async (req, res) => {
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
 
+  const stId = await generateStudentId();
+
   await StudentInformation.findOneAndUpdate(
     { _id: formId },
     {
@@ -154,7 +164,7 @@ const studentPreference = asyncHandler(async (req, res) => {
         pageStatus:{
           status:"notapproved"
         },
-        stId: await generateStudentId()
+        stId: stId
       },
     },
     { new: true }
