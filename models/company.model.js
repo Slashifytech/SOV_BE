@@ -230,9 +230,8 @@ const CompanySchema = new Schema({
   companyOperations: CompanyOperationsSchema, // Added Company Operations
   references: [ReferenceSchema], // Added References,
   agentId: {
-    type: Schema.Types.ObjectId,
-    ref: "Agent",
-    required: true,
+    type: String,
+    // required: true,
   },
   pageCount: {
     type: Number,
