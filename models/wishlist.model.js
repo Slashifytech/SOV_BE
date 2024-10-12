@@ -8,10 +8,15 @@ const WishlistSchema = new Schema({
     required: true,
   },
   institutes: [{
+    instituteId:{
     type: Schema.Types.ObjectId,
     ref: "Institute",  // Reference to the Institute model
     required: true,
-  }],
+  },
+  status:{
+    type: String
+  }
+}],
 }, {
   timestamps: true,  // Automatically add createdAt and updatedAt fields
 });

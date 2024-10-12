@@ -6,30 +6,54 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 
 
-const addToWishlist = asyncHandler(async(req, res)=>{
-    const { instituteId } = req.body;
-    const userId = req.user.id;  // Assuming you're getting the user ID from the authenticated user
-    
-    // Check if the institute exists
-    const institute = await Institute.findById(instituteId);
-    if (!institute) {
-      return res.status(404).json( new ApiResponse(404, {}, "Institute not found"));
-    }
+const addToWishlist = asyncHandler(async (req, res) => {
+  const { instituteId } = req.body;
+  const userId = req.user.id;  // Assuming you're getting the user ID from the authenticated user
+  
+  // Check if the institute exists
+  const institute = await Institute.findById(instituteId);
+  if (!institute) {
+    return res.status(404).json(new ApiResponse(404, {}, "Institute not found"));
+  }
 
-    // Add institute to wishlist or update the existing wishlist
-    let wishlist = await Wishlist.findOne({ userId });
-    if (!wishlist) {
-      wishlist = new Wishlist({ userId, institutes: [instituteId] });
-    } else if (!wishlist.institutes.includes(instituteId)) {
-      wishlist.institutes.push(instituteId);
-    }
+  // Find the user's wishlist
+  let wishlist = await Wishlist.findOne({ userId });
+  
+  if (!wishlist) {
+    // Create a new wishlist if it doesn't exist and add the institute with status 'added'
+    wishlist = new Wishlist({
+      userId,
+      institutes: [{
+        instituteId,
+        status: 'added'
+      }]
+    });
+  } else {
+    // Check if the institute is already in the wishlist
+    const instituteIndex = wishlist.institutes.findIndex(item => 
+      item.instituteId.toString() === instituteId
+    );
 
-    await wishlist.save();
-    return res.status(200).json(
-        new ApiResponse(200, wishlist, "Institute added to wishlist" )
-    )   
-    
-})
+    if (instituteIndex === -1) {
+      // If institute not in the wishlist, add it with status 'added'
+      wishlist.institutes.push({
+        instituteId,
+        status: 'added'
+      });
+    } else {
+      // If institute exists, toggle the status between 'added' and 'removed'
+      const currentStatus = wishlist.institutes[instituteIndex].status;
+      wishlist.institutes[instituteIndex].status = currentStatus === 'added' ? 'removed' : 'added';
+    }
+  }
+
+  // Save the wishlist
+  await wishlist.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, wishlist, "Wishlist updated successfully")
+  );
+});
 
  const removeFromWishlist = asyncHandler(async (req, res) => {
     const { instituteId } = req.params;

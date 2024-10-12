@@ -7,19 +7,38 @@ import { CourseFeeApplicationSchema, GICSchema, OfferLetterSchema } from "../val
 // Function to generate unique Application ID
 async function generateApplicationId() {
     const today = new Date();
-
+  
     // Format the date components (DDMMYY)
     const day = today.getDate().toString().padStart(2, '0');
     const month = (today.getMonth() + 1).toString().padStart(2, '0');
     const year = today.getFullYear().toString().slice(2);
-
-    // Get the current document count and format it as a two-digit number
-    const count = await Institution.countDocuments().exec();  // Ensure query execution with .exec()
-    const countStr = (count + 1).toString().padStart(2, '0');
-
-    // Construct and return the Application ID (e.g., AP-24092601)
-    return `AP-${day}${month}${year}${countStr}`;
-}
+  
+    // Construct the base Application ID without the sequence number
+    const baseId = `AP-${year}${month}${day}`;
+  
+    // Find the last created application with a matching date prefix (e.g., AP-240926)
+    const lastInstitution = await Institution
+      .findOne({ applicationId: { $regex: `^${baseId}` } })  // Search for existing IDs with the same base
+      .sort({ applicationId: -1 })  // Sort by descending order to get the last created one
+      .exec();
+  
+    let sequenceNumber = 1;  // Default sequence number
+  
+    if (lastInstitution) {
+      // Extract the last two digits (sequence number) from the last applicationId
+      const lastId = lastInstitution.applicationId;
+      const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the applicationId
+      
+      // Increment the sequence number for the new ID
+      sequenceNumber = lastSequence + 1;
+    }
+  
+    // Format the sequence number as a two-digit number
+    const sequenceStr = sequenceNumber.toString().padStart(2, '0');
+  
+    // Return the unique Application ID (e.g., AP-24092601)
+    return `${baseId}${sequenceStr}`;
+  }
 
 const registerOfferLetter = asyncHandler(async (req, res) => {
     const { body: payload, user } = req;

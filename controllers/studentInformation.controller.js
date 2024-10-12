@@ -17,13 +17,33 @@ async function generateStudentId() {
   const month = (today.getMonth() + 1).toString().padStart(2, '0');
   const year = today.getFullYear().toString().slice(2);
 
-  // Get the current document count and format it as a two-digit number
-  const count = await StudentInformation.countDocuments().exec();  // Ensure query execution with .exec()
-  const countStr = (count + 1).toString().padStart(2, '0');
+  // Construct the base Student ID without the sequence number
+  const baseId = `ST-${year}${month}${day}`;
 
-  // Construct and return the Application ID (e.g., AP-24092601)
-  return `ST-${day}${month}${year}${countStr}`;
+  // Find the last created student with a matching date prefix (e.g., ST-240926)
+  const lastStudent = await StudentInformation
+    .findOne({ studentId: { $regex: `^${baseId}` } })  // Search for existing IDs with the same base
+    .sort({ studentId: -1 })  // Sort by descending order to get the last created one
+    .exec();
+
+  let sequenceNumber = 1;  // Default sequence number if no match found
+
+  if (lastStudent) {
+    // Extract the last two digits (sequence number) from the last studentId
+    const lastId = lastStudent.studentId;
+    const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the studentId
+    
+    // Increment the sequence number for the new ID
+    sequenceNumber = lastSequence + 1;
+  }
+
+  // Format the sequence number as a two-digit number
+  const sequenceStr = sequenceNumber.toString().padStart(2, '0');
+
+  // Return the unique Student ID (e.g., ST-24092601)
+  return `${baseId}${sequenceStr}`;
 }
+
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
   const { body: payload } = req;
