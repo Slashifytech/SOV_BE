@@ -102,7 +102,7 @@ const CompanyOperationsSchema = z.object({
   designation: z.string().optional(),
   country: z.string().optional(),
   contactNumber: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().optional(),
 });
 
 
