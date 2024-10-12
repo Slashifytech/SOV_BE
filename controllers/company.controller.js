@@ -247,8 +247,18 @@ const registerReferences = asyncHandler(async (req, res) => {
     return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
   }
 
-  // Find the company associated with the agentId
-  const company = await Company.findOne({ agentId: req.user.id });
+  // Debugging: Log the user ID
+  console.log("User ID:", req.user.id);
+
+  // Find the company associated with the agentId (try using _id as well)
+  let company = await Company.findOne({ agentId: req.user.id });
+  if (!company) {
+    console.log("Company not found with agentId, trying _id...");
+    company = await Company.findById(req.user.id);  // Try using MongoDB _id as a fallback
+  }
+
+  console.log("Company:", company);
+
   if (!company) {
     return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
   }
@@ -257,7 +267,8 @@ const registerReferences = asyncHandler(async (req, res) => {
   company.agId = await generateAgentId();
   company.references = result.data;
   company.pageCount = 6;
-  company.pageStatus.status = 'notapproved'
+  company.pageStatus.status = 'notapproved';
+
   // Save the updated company details
   await company.save();
 

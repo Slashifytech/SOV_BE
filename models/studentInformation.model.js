@@ -167,12 +167,10 @@ const PreferencesSchema = new Schema(
 const StudentInformationSchema = new Schema(
   {
     studentId: {
-      type: Schema.Types.ObjectId,
-      ref: "Student",
+      type: String
     },
     agentId: {
-      type: Schema.Types.ObjectId,
-      ref: "Agent",
+       type: String
     },
     personalInformation: {
       type: PersonalInformationSchema,
