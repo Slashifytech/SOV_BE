@@ -41,7 +41,7 @@ Supporting your success in global education</p>
 export const studentSignUpTemp = (firstName, otp)=>{
   return `<p>Dear <strong>${firstName}</strong>,</p>
 
-<p>Thank you for registering with Sov Portal! To complete your Student account setup, please verify your email address by using the One-Time Password (OTP) provided below.</p>
+<p>Thank you for signing up with Sov Portal! To complete your Student account setup, please verify your email address by using the One-Time Password (OTP) provided below.</p>
 
 <p><strong>Your OTP: ${otp}</strong></p>
 

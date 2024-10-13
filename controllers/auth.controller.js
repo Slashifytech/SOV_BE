@@ -98,8 +98,8 @@ const verifyStudentOtp = asyncHandler(async (req, res) => {
     return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
   }
    
-  const temp = studentAccountCredentials(tempStudent.firstName, payload.emai ,payload.password )
-  await sendAuthData(payload.email, subject, temp);
+  const temp = studentAccountCredentials(tempStudent.firstName, payload.email ,payload.password )
+  await sendAccountCredentials(payload.email, " Welcome to Sov Portal – Your Student Account is Ready!", temp);
 
   // Once OTP is verified, create a new student in the Student collection
   const newStudent = await Student.create({
