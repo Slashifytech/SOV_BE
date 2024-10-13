@@ -8,6 +8,8 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { studentRegistrationComplete } from "../utils/mailTemp.js";
+import { sendEmailVerification } from "../utils/sendMail.js";
 
 async function generateStudentId() {
   const today = new Date();
@@ -168,8 +170,11 @@ const studentPreference = asyncHandler(async (req, res) => {
   }
 
   const stId = await generateStudentId();
+  
 
-  await StudentInformation.findOneAndUpdate(
+  
+
+  const studentInfo = await StudentInformation.findOneAndUpdate(
     { _id: formId },
     {
       $set: {
@@ -189,6 +194,9 @@ const studentPreference = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+
+  const temp = studentRegistrationComplete(studentInfo.personalInformation.firstName);
+  await sendEmailVerification(studentInfo.personalInformation.email, "Registration Successful – Awaiting Admin Approval", temp)
 
   return res
     .status(201)

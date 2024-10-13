@@ -1,6 +1,8 @@
 import { Company } from "../models/company.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { agentRegistrationComplete } from "../utils/mailTemp.js";
+import { sendEmailVerification } from "../utils/sendMail.js";
 import { BankDetailsSchema, CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema, ReferenceSchema } from "../validators/company.validator.js";
 import { z } from 'zod';
 
@@ -248,7 +250,7 @@ const registerReferences = asyncHandler(async (req, res) => {
   }
 
   // Debugging: Log the user ID
-  console.log("User ID:", req.user.id);
+ 
 
   // Find the company associated with the agentId (try using _id as well)
   let company = await Company.findOne({ agentId: req.user.id });
@@ -257,11 +259,14 @@ const registerReferences = asyncHandler(async (req, res) => {
     company = await Company.findById(req.user.id);  // Try using MongoDB _id as a fallback
   }
 
-  console.log("Company:", company);
+  
 
   if (!company) {
     return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
   }
+
+  const temp = agentRegistrationComplete(company.accountDetails.primaryContactPerson.name);
+  await sendEmailVerification(company.accountDetails.founderOrCeo.email,"Registration Successful Awaiting Admin Approval", temp);
 
   // Update the references for the company
   company.agId = await generateAgentId();

@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmailVerification = async (email, opt) => {
+const sendEmailVerification = async (email, subject, temp) => {
   // Debugging output
   // console.log("Sender Email:", process.env.SENDER_MAIL);
   // console.log("App Password:", process.env.APP_PASSWORD);
@@ -25,8 +25,8 @@ const sendEmailVerification = async (email, opt) => {
       address: process.env.SENDER_MAIL,
     },
     to: email,
-    subject: "Verify Your email",
-    text: `Your opt is ${opt}`,
+    subject: subject,
+    html: temp,
   };
 
   try {
@@ -58,4 +58,25 @@ const sendAuthData = async (email, password) => {
     console.error("Error sending email:", error);
   }
 };
-export { sendEmailVerification, sendAuthData };
+
+const sendAccountCredentials = async (email, subject, temp) => {
+  // console.log(email, password);
+  const mailOptions = {
+    from: {
+      name: "SOV",
+      address: process.env.SENDER_MAIL,
+    },
+    to: email,
+    subject: subject,
+    html: temp,
+  };
+
+  try {
+    // Send the email
+    const mail = await transporter.sendMail(mailOptions);
+    // console.log("Mail sent successfully:", mail);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
+export { sendEmailVerification, sendAuthData, sendAccountCredentials };
