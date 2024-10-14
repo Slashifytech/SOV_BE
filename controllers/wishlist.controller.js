@@ -107,3 +107,5 @@ const addToWishlist = asyncHandler(async (req, res) => {
 })
 
 export {addToWishlist, removeFromWishlist, fetchWishlist}
+
+

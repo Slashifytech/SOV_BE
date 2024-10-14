@@ -51,7 +51,7 @@ const PTESchema = z.object({
   overallBands: z.number().optional(),
 });
 
-// Zod schema for TOEFL Score
+// Zod schema for TOEFL intakeScore
 const TOEFLSchema = z.object({
   listening: z.number().optional(),
   reading: z.number().optional(),
@@ -75,6 +75,7 @@ export const OfferLetterSchema = z.object({
   toefl: TOEFLSchema.optional(),  // TOEFL score section, optional
   certificate: CertificateUploadSchema.optional(),
   studentInformationId: z.string().nonempty("studentInformationId is required"),
+  intake: z.string().nonempty("studentInformationId is required"),
 });
 
 
