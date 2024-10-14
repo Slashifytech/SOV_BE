@@ -174,6 +174,29 @@ const getAllApplications = asyncHandler(async (req, res) => {
         }
     }
 
+    // Add filter for specific application types
+    if (req.query.filterType) {
+        switch (req.query.filterType.toLowerCase()) {
+            case 'offerletter':
+                // Filter for Offer Letter applications
+                query['offerLetter'] = { $exists: true };
+                break;
+            case 'coursefeeapplication':
+                // Filter for Course Fee Applications
+                query['courseFeeApplication'] = { $exists: true };
+                break;
+            case 'visa':
+                // Filter for Visa applications (assuming this means GIC status or similar)
+                query['gic'] = { $exists: true };
+                break;
+            case 'all':
+                // No additional filters, show all
+                break;
+            default:
+                return res.status(400).json(new ApiResponse(400, {}, "Invalid filter type provided."));
+        }
+    }
+
     // If there are any OR conditions, merge them with the main query using $or
     if (orConditions.length > 0) {
         query.$or = orConditions;
@@ -195,6 +218,7 @@ const getAllApplications = asyncHandler(async (req, res) => {
         userId: app.userId,
         offerLetter: app.offerLetter,
         gic: app.gic,
+        courseFeeApplication: app.courseFeeApplication,
         createdAt: app.createdAt,
         updatedAt: app.updatedAt,
     }));

@@ -76,19 +76,34 @@ const addToWishlist = asyncHandler(async (req, res) => {
     );
   });
 
-   const fetchWishlist = asyncHandler(async (req, res) => {
+  const fetchWishlist = asyncHandler(async (req, res) => {
     const userId = req.user.id;  // Assuming you're getting the user ID from the authenticated user
-  
+
     // Find the user's wishlist and populate institute details
-    const wishlist = await Wishlist.findOne({ userId }).populate("institutes");
+    const wishlist = await Wishlist.findOne({ userId })
+        .populate({
+            path: 'institutes.instituteId',  // Populate the institute details
+            select: '-__v'  // Exclude __v field if you don't want it
+        })
+        .exec();
+
+    // If wishlist doesn't exist, return 404
     if (!wishlist) {
-      return res.status(404).json(new ApiResponse(404, {}, "Wishlist not found"));
+        return res.status(404).json(new ApiResponse(404, {}, "Wishlist not found"));
     }
-  
-    // Return the wishlist
+
+    // Filter institutes where status is "added"
+    const filteredInstitutes = wishlist.institutes.filter(institute => institute.status === 'added');
+
+    // If no institutes with status "added", return 404
+    if (filteredInstitutes.length === 0) {
+        return res.status(404).json(new ApiResponse(404, {}, "No institutes with status 'added' found"));
+    }
+
+    // Return the filtered wishlist
     return res.status(200).json(
-      new ApiResponse(200, wishlist, "Wishlist fetched successfully")
+        new ApiResponse(200, { institutes: filteredInstitutes }, "Wishlist fetched successfully")
     );
-  });
+})
 
 export {addToWishlist, removeFromWishlist, fetchWishlist}
