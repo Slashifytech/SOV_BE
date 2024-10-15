@@ -75,7 +75,7 @@ export const OfferLetterSchema = z.object({
   toefl: TOEFLSchema.optional(),  // TOEFL score section, optional
   certificate: CertificateUploadSchema.optional(),
   studentInformationId: z.string().nonempty("studentInformationId is required"),
-  intake: z.string().nonempty("studentInformationId is required"),
+  intake: z.string().nonempty("intake is required"),
 });
 
 
