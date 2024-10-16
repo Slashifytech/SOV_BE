@@ -33,13 +33,12 @@ const PreferencesSchema = z.object({
   intake: z.string().nonempty("Intake is required"),
 });
 
-// Zod schema for IELTS Score
 const IELTSSchema = z.object({
-  reading: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  speaking: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  writing: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  listening: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  overallBand: z.number().optional(),  // Optional overall band score
+  reading: z.number().optional(),
+  speaking: z.number().optional(),
+  writing: z.number().optional(),
+  listening: z.number().optional(),
+  overallBand: z.number().optional(),  // Already optional
 });
 
 // Zod schema for PTE Score
@@ -62,7 +61,7 @@ const TOEFLSchema = z.object({
 
 // Zod schema for Document Upload
 const CertificateUploadSchema = z.object({
-  url: z.string().url("Invalid URL").optional(),
+  urls: z.array(z.string().url("Invalid URL")),
 });
 
 // Zod schema for the Offer Letter section
@@ -75,7 +74,6 @@ export const OfferLetterSchema = z.object({
   toefl: TOEFLSchema.optional(),  // TOEFL score section, optional
   certificate: CertificateUploadSchema.optional(),
   studentInformationId: z.string().nonempty("studentInformationId is required"),
-  intake: z.string().nonempty("intake is required"),
 });
 
 

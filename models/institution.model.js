@@ -44,6 +44,10 @@ const PreferencesSchema = new Schema({
     institution: { type: String, required: true },
     course: { type: String, required: true },
     intake: { type: String, required: true },
+    offerLetterPrice:{
+        type: String,
+        default: "$50"
+     }, 
 });
 
 // Schema for IELTS Score
@@ -145,13 +149,7 @@ const InstitutionSchema = new Schema({
             enum: ['underreview', 'completed', 'reject', 'pending', 'approved'],  // Valid status values
              default: 'underreview'
         },
-        intake:{
-          type: String
-        },
-        offerLetterPrice:{
-           type: String,
-           default: "$50"
-        }, 
+       
         message: { type: String }  // Optional message field
     },
     gic: { 
