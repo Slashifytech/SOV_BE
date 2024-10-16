@@ -25,6 +25,8 @@ import documentRouter from "./routes/document.routes.js";
 import withdrawalRouter from "./routes/withdrawal.routes.js";
 import agentRouter from "./routes/agentDashboard.routes.js";
 import wishlistRouter from "./routes/wishlist.routes.js";
+import ticketRouter from "./routes/ticket.routes.js";
+import adminRouter from "./routes/adminDashboard.routes.js";
 
 
 // User routes
@@ -38,5 +40,7 @@ app.use("/api/document", documentRouter);
 app.use("/api/withdrawal", withdrawalRouter);
 app.use("/api/agent", agentRouter);
 app.use("/api/wishlist", wishlistRouter);
+app.use("/api/ticket",ticketRouter );
+app.use("/api/admin",adminRouter );
 
 export default app;

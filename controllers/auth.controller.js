@@ -14,7 +14,7 @@ import {
 } from "../validators/auth.validator.js";
 import { generateTokens } from "../utils/genrateToken.js";
 import { generateOtp } from "../utils/commonFuntions.js";
-import { sendAccountCredentials, sendAuthData, sendEmailVerification } from "../utils/sendMail.js";
+import { sendAccountCredentials, sendAuthData, sendEmail, sendEmailVerification } from "../utils/sendMail.js";
 import { TempStudent } from "../models/tempStudent.model.js";
 import { TempAgent } from "../models/tempAgent.model.js";
 import crypto from 'crypto'; // Import crypto for generating a unique token
@@ -49,8 +49,8 @@ const sentStudentOtp = asyncHandler(async (req, res) => {
   // Generate OTP and send it to the user's email
   const OTP = generateOtp();
   const temp = studentSignUpTemp(payload.firstName, OTP)
-  await sendEmailVerification(payload.email," Verify Your Account with OTP", temp);
-
+  // await sendEmailVerification(payload.email," Verify Your Account with OTP", temp);
+  await sendEmail({to:payload.email, subject:"Verify Your Account with OTP", htmlContent:temp })
   // Save the user data and OTP temporarily for verification
   const tempStudent = await TempStudent.create({
     firstName: payload.firstName,
@@ -79,29 +79,38 @@ const verifyStudentOtp = asyncHandler(async (req, res) => {
   // Validate the payload using Zod schema
   const validation = verifyOtpSchema.safeParse(payload);
   if (!validation.success) {
-    return res
-      .status(400)
-      .json(new ApiResponse(400, {}, validation.error.errors));
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
   }
 
+  // Normalize the email before querying
+  const email = payload.email.toLowerCase().trim();
+  console.log(email)
+
   // Find the temporary student record
+
   const tempStudent = await TempStudent.findOne({ email: payload.email });
+
 
   if (!tempStudent) {
     return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
   }
 
   // Check if OTP is correct and not expired
-
   const isOtpValid = await tempStudent.isOtpCorrect(payload.otp);
   if (!isOtpValid || tempStudent.otpExpiry < Date.now()) {
     return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
   }
-   
-  const temp = studentAccountCredentials(tempStudent.firstName, payload.email ,payload.password )
-  await sendAccountCredentials(payload.email, " Welcome to Sov Portal – Your Student Account is Ready!", temp);
 
-  // Once OTP is verified, create a new student in the Student collection
+  const temp = studentAccountCredentials(tempStudent.firstName, payload.email, payload.password);
+
+  // Send email with account credentials
+  await sendEmail({
+    to: payload.email,
+    subject: "Welcome to Sov Portal Your Student Account is Ready!",
+    htmlContent: temp,
+  });
+
+  // Create a new student in the Student collection
   const newStudent = await Student.create({
     firstName: tempStudent.firstName,
     lastName: tempStudent.lastName,
@@ -116,9 +125,7 @@ const verifyStudentOtp = asyncHandler(async (req, res) => {
   // Remove the temp student record
   await TempStudent.deleteOne({ email: payload.email });
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, { email: newStudent.email }, "Student registered successfully"));
+  return res.status(201).json(new ApiResponse(201, { email: newStudent.email }, "Student registered successfully"));
 });
 
 const sendAgentOtp = asyncHandler(async (req, res) => {
@@ -144,8 +151,9 @@ const sendAgentOtp = asyncHandler(async (req, res) => {
   // Generate OTP and send it to the user's email
   const OTP = generateOtp();
   
-  const emailTemp = agentSignUpTemp(payload.accountDetails.primaryContactPerson.name, OTP)
-  await sendEmailVerification(payload.accountDetails.founderOrCeo.email,"Verify Your Account with OTP", emailTemp);
+  const temp = agentSignUpTemp(payload.accountDetails.primaryContactPerson.name, OTP)
+  // await sendEmailVerification(payload.accountDetails.founderOrCeo.email,"Verify Your Account with OTP", emailTemp);
+  await sendEmail({to:payload.accountDetails.founderOrCeo.email, subject:"Verify Your Account with OTP", htmlContent:temp })
 
   // Save the agent data and OTP temporarily for verification
   const tempAgent = await TempAgent.create({
@@ -191,7 +199,8 @@ const verifyAgentOtp = asyncHandler(async (req, res) => {
   };
        
   const temp = agentAccountCredentials(tempAgent.accountDetails.primaryContactPerson.name,payload.email, payload.password )
-   await sendAccountCredentials(payload.email, "Welcome to Sov Portal – Your Agent Account is Ready!", temp);
+  //  await sendAccountCredentials(payload.email, "Welcome to Sov Portal – Your Agent Account is Ready!", temp);
+   await sendEmail({to:payload.email, subject:"Welcome to Sov Portal – Your Agent Account is Ready!", htmlContent:temp })
 
   const agent = new Agent(agentData);
   await agent.save();
@@ -536,7 +545,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   // Find the temporary user (Agent/Student) by email
   const tempUser = await tempModel.findOne(emailQuery);
-  console.log(tempUser, "++++++++++++++++++++++++")
+ 
   if (!tempUser) {
     return res
       .status(404)

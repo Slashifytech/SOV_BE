@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { verifyAdmin } from "../middlewares/auth.middleware";
-import { changeStudentInformationStatus, getAllApplications, getTotalAgentsCount, getTotalStudentCount } from "../controllers/adminDashboard.controller";
+import { verifyAdmin } from "../middlewares/auth.middleware.js";
+import { changeStudentInformationStatus, getAllApplications, getTotalAgentsCount, getTotalStudentCount } from "../controllers/adminDashboard.controller.js";
 const router = Router();
 
 router.route("/agent-count").get(verifyAdmin, getTotalAgentsCount);
