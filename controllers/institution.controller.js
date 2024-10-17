@@ -212,16 +212,28 @@ const getAllApplications = asyncHandler(async (req, res) => {
     // Get the total number of applications for pagination
     const totalApplications = await Institution.countDocuments(query);
 
-    // Transform applications to include gic and offer letter data
-    const transformedApplications = applications.map(app => ({
-        applicationId: app.applicationId,
-        userId: app.userId,
-        offerLetter: app.offerLetter,
-        gic: app.gic,
-        courseFeeApplication: app.courseFeeApplication,
-        createdAt: app.createdAt,
-        updatedAt: app.updatedAt,
-    }));
+    // Transform applications to include only populated fields (offerLetter, gic, courseFeeApplication)
+    const transformedApplications = applications.map(app => {
+        const transformedApp = {
+            applicationId: app.applicationId,
+            userId: app.userId,
+            createdAt: app.createdAt,
+            updatedAt: app.updatedAt,
+        };
+
+        // Only include the field if it has a value
+        if (app.offerLetter && Object.keys(app.offerLetter).length > 0) {
+            transformedApp.offerLetter = app.offerLetter;
+        }
+        if (app.gic && Object.keys(app.gic).length > 0) {
+            transformedApp.gic = app.gic;
+        }
+        if (app.courseFeeApplication && Object.keys(app.courseFeeApplication).length > 0) {
+            transformedApp.courseFeeApplication = app.courseFeeApplication;
+        }
+
+        return transformedApp;
+    });
 
     // Return a success response with paginated data and pagination info
     return res.status(200).json(
@@ -233,6 +245,7 @@ const getAllApplications = asyncHandler(async (req, res) => {
         }, "Data fetched successfully")
     );
 });
+
 
 const registerCourseFeeApplication = asyncHandler(async (req, res) => {
     const { body: payload, user } = req;
