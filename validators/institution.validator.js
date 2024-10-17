@@ -61,7 +61,7 @@ const TOEFLSchema = z.object({
 
 // Zod schema for Document Upload
 const CertificateUploadSchema = z.object({
-  urls: z.array(z.string().url("Invalid URL")),
+  urls: z.array(z.string()),
 });
 
 // Zod schema for the Offer Letter section
