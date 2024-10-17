@@ -18,7 +18,7 @@ const PersonalInformationSchema = z.object({
 
 // Zod schema for Education Details
 const EducationDetailsSchema = z.object({
-  educationLevel: z.enum(['Diploma', 'Post Graduate', 'Under Graduate']),  // Ensures only the allowed values are used
+  educationLevel: z.enum(['diploma', 'underGraduate', 'postGraduate', "diplomaPG", "certificationCourse"]),  // Ensures only the allowed values are used
   markSheet10: z.string().optional(), // Optional string for 10th marksheet
   markSheet12: z.string().optional(), // Optional string for 12th marksheet
   markSheetUnderGraduate: z.string().optional(), // Optional string for undergraduate marksheet
