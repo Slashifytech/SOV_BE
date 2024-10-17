@@ -26,7 +26,7 @@ const TicketSchema = new Schema({
   },
   status: {
     type: String,  // Fix typo from 'types' to 'type'
-    default: "under review",  // Default status when the ticket is created
+    default: "underReview",  // Default status when the ticket is created
   },
   ticketId: {
     type: String
