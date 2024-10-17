@@ -324,22 +324,24 @@ const applicationOverview = asyncHandler(async (req, res) => {
     const matchedStudentIds = institutions.map(institution => institution.studentInformationId.toString());
   
     // Step 8: Create a response array that pairs studentInformationId with firstName
-    const studentInfoWithNames = studentInfoIdAndName
+    const studentOverview = studentInfoIdAndName
       .filter(student => matchedStudentIds.includes(student._id.toString()))
       .map(student => ({
+        firstName: student.personalInformation.firstName,
+        stIds: matchedStudentIds.length > 0 ? matchedStudentIds[0] : "", // Return the first student ID or an empty string
         studentInformationId: student._id,
-        firstName: student.personalInformation.firstName
+        totalCount,
+        underReviewCount,
+        approvedCount
       }));
   
-    // Step 9: Return the result with studentInfoIdAndName and relevant counts
+    // Step 9: Return the result in the desired format
     return res.status(200).json(new ApiResponse(200, {
-      studentInfoWithNames,  // Return both studentInformationId and firstName
-      stIds: matchedStudentIds,
-      totalCount,
-      underReviewCount,
-      approvedCount
+      studentOverView: studentOverview, // Rename to studentOverView
     }, "Data fetched successfully"));
   });
+  
+  
   
 
 
