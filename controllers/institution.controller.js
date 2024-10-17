@@ -287,8 +287,37 @@ const registerCourseFeeApplication = asyncHandler(async (req, res) => {
     return res.status(201).json(new ApiResponse(201, createdCourseFeeApplication, "Course Fee Application registered successfully"));
 });
 
+const applicationOverview = asyncHandler(async(req, res)=>{
+    const userId = req.user.id; // Assuming req.user contains the authenticated user's ID
+
+    // Query the total number of students for this user
+    const totalCount = await StudentInformation.countDocuments({ userId });
+
+    // Query the number of students under review for this user
+    const underReviewCount = await StudentInformation.countDocuments({
+      userId,
+      'pageStatus.status': 'underreview'
+    });
+
+    // Query the number of approved students for this user
+    const approvedCount = await StudentInformation.countDocuments({
+      userId,
+      'pageStatus.status': 'approved'
+    });
+
+    // Get all studentIds where userId matches
+    const students = await StudentInformation.find({ userId }, 'stId'); // Only return the stId field
+
+    // Map the studentIds
+    const studentIds = students.map(student => student.stId);
+    return res.status(200).json(new ApiResponse(200, {stIds: studentIds,
+        totalCount,
+        underReviewCount,
+        approvedCount}, "Data fetch successfully"))
+})
 
 
 
 
-export { registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication};
+
+export { registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview};
