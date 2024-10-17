@@ -287,34 +287,60 @@ const registerCourseFeeApplication = asyncHandler(async (req, res) => {
     return res.status(201).json(new ApiResponse(201, createdCourseFeeApplication, "Course Fee Application registered successfully"));
 });
 
-const applicationOverview = asyncHandler(async(req, res)=>{
-    const userId = req.user.id; // Assuming req.user contains the authenticated user's ID
-
-    // Query the total number of students for this user
-    const totalCount = await StudentInformation.countDocuments({ userId });
-
-    // Query the number of students under review for this user
-    const underReviewCount = await StudentInformation.countDocuments({
-      userId,
-      'pageStatus.status': 'underreview'
+const applicationOverview = asyncHandler(async (req, res) => {
+    // Step 1: Fetch student information (ID and firstName) for the logged-in user's agentId
+    const studentInfoIdAndName = await StudentInformation.find(
+      { agentId: req.user.id }, // Filter where agentId matches the logged-in user's id
+      '_id personalInformation.firstName' // Return both _id and firstName fields
+    );
+  
+    // Step 2: Extract the list of student _ids from studentInfoIdAndName
+    const studentIds = studentInfoIdAndName.map(student => student._id);
+  
+    // Step 3: Query the total number of institutions for matching student IDs
+    const totalCount = await Institution.countDocuments({
+      studentInformationId: { $in: studentIds } // Match where studentInformationId is in the list of studentIds
     });
-
-    // Query the number of approved students for this user
-    const approvedCount = await StudentInformation.countDocuments({
-      userId,
-      'pageStatus.status': 'approved'
+  
+    // Step 4: Query the number of institutions under review for matching student IDs
+    const underReviewCount = await Institution.countDocuments({
+      studentInformationId: { $in: studentIds },
+      'offerLetter.status': 'underreview' // Assuming you are checking status under offerLetter
     });
-
-    // Get all studentIds where userId matches
-    const students = await StudentInformation.find({ userId }, 'stId'); // Only return the stId field
-
-    // Map the studentIds
-    const studentIds = students.map(student => student.stId);
-    return res.status(200).json(new ApiResponse(200, {stIds: studentIds,
-        totalCount,
-        underReviewCount,
-        approvedCount}, "Data fetch successfully"))
-})
+  
+    // Step 5: Query the number of institutions approved for matching student IDs
+    const approvedCount = await Institution.countDocuments({
+      studentInformationId: { $in: studentIds },
+      'offerLetter.status': 'approved' // Assuming you are checking status under offerLetter
+    });
+  
+    // Step 6: Fetch the studentInformationId from the institution documents
+    const institutions = await Institution.find(
+      { studentInformationId: { $in: studentIds } },
+      'studentInformationId' // Only return the studentInformationId field
+    );
+  
+    // Step 7: Map the studentInformationId from the institution documents
+    const matchedStudentIds = institutions.map(institution => institution.studentInformationId.toString());
+  
+    // Step 8: Create a response array that pairs studentInformationId with firstName
+    const studentInfoWithNames = studentInfoIdAndName
+      .filter(student => matchedStudentIds.includes(student._id.toString()))
+      .map(student => ({
+        studentInformationId: student._id,
+        firstName: student.personalInformation.firstName
+      }));
+  
+    // Step 9: Return the result with studentInfoIdAndName and relevant counts
+    return res.status(200).json(new ApiResponse(200, {
+      studentInfoWithNames,  // Return both studentInformationId and firstName
+      stIds: matchedStudentIds,
+      totalCount,
+      underReviewCount,
+      approvedCount
+    }, "Data fetched successfully"));
+  });
+  
 
 
 
