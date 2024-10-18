@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
-import { applicationOverview, editCertificate, editEducationDetails, editIELTSScore, editOfferLetterAnsPassport, editParentDocument, editPersonalInformation, editPreferences, editPTEScore, editStudentDocument, editTOEFLScore, getAllApplications, registerCourseFeeApplication, registerGIC, registerOfferLetter } from "../controllers/institution.controller.js";
+import { applicationOverview, editCertificate, editEducationDetails, editIELTSScore, editOfferLetterAnsPassport, editParentDocument, editPersonalInformation, editPreferences, editPTEScore, editStudentDocument, editTOEFLScore, getAllApplications, getApplicationById, registerCourseFeeApplication, registerGIC, registerOfferLetter } from "../controllers/institution.controller.js";
 const router = Router();
 
 router.route("/register-offerletter").post( verifyJwt, registerOfferLetter);
@@ -18,7 +18,7 @@ router.route("/certificate/:applicationId").patch( verifyJwt, editCertificate);
 router.route("/student-document/:applicationId").patch( verifyJwt, editStudentDocument);
 router.route("/parent-document/:applicationId").patch( verifyJwt, editParentDocument);
 router.route("/offer-letter-and-passport/:applicationId").patch( verifyJwt, editOfferLetterAnsPassport);
-
+router.route("/application/:id").get( verifyJwt, getApplicationById);
 
 
 

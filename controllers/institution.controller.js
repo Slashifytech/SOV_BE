@@ -582,8 +582,23 @@ const editOfferLetterAnsPassport = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, data, 'Offer letter and passport information updated successfully.'));
 });
 
+const getApplicationById = asyncHandler(async(req, res)=>{
+    const { id } = req.params; 
+
+    const application = await Institution.findOne({ _id: id });
+
+   
+    if (!application) {
+        return res.status(404).json(new ApiResponse(404, {}, "Application not found"))
+    }
+
+     return res.status(200).json(new ApiResponse(
+        200, application, "data fetch successfully"
+     ));
+})
 
 
 
 
-export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument};
+
+export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument, getApplicationById};
