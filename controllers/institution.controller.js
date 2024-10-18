@@ -517,7 +517,73 @@ const editCertificate = asyncHandler(async (req, res) => {
 });
 
 
+const editStudentDocument = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params; // Extract applicationId from URL parameters
+    const { aadharCard, panCard } = req.body; // Extract fields to be updated from the request body
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({_id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update the studentDocument fields
+    institution.courseFeeApplication.studentDocument.aadharCard = aadharCard || institution.courseFeeApplication.studentDocument.aadharCard;
+    institution.courseFeeApplication.studentDocument.panCard = panCard || institution.courseFeeApplication.studentDocument.panCard;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'Student document updated successfully.'));
+});
+
+const editParentDocument = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params; // Extract applicationId from URL parameters
+    const { fatherAadharCard, fatherPanCard, motherAadharCard, motherPanCard } = req.body; // Extract fields to be updated from the request body
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({_id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update the parentDocument fields
+    institution.courseFeeApplication.parentDocument.fatherAadharCard = fatherAadharCard || institution.courseFeeApplication.parentDocument.fatherAadharCard;
+    institution.courseFeeApplication.parentDocument.fatherPanCard = fatherPanCard || institution.courseFeeApplication.parentDocument.fatherPanCard;
+    institution.courseFeeApplication.parentDocument.motherAadharCard = motherAadharCard || institution.courseFeeApplication.parentDocument.motherAadharCard;
+    institution.courseFeeApplication.parentDocument.motherPanCard = motherPanCard || institution.courseFeeApplication.parentDocument.motherPanCard;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'Parent document updated successfully.'));
+});
+
+const editOfferLetterAnsPassport = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params; // Extract applicationId from URL parameters
+    const { offerLetter, passport } = req.body; // Extract fields to be updated from the request body
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update the offerLetterAnsPassport fields
+    institution.courseFeeApplication.offerLetterAnsPassport.offerLetter = offerLetter || institution.courseFeeApplication.offerLetterAnsPassport.offerLetter;
+    institution.courseFeeApplication.offerLetterAnsPassport.passport = passport || institution.courseFeeApplication.offerLetterAnsPassport.passport;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'Offer letter and passport information updated successfully.'));
+});
 
 
 
-export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate};
+
+
+export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument};
