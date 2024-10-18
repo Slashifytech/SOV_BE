@@ -341,11 +341,183 @@ const applicationOverview = asyncHandler(async (req, res) => {
     }, "Data fetched successfully"));
   });
   
-  
-  
+
+  const editPersonalInformation = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, personalInformation } = req.body;
+
+    if (!['offerLetter', 'gic'].includes(section)) {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" or "gic".'))    }
+
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+      return res.status(404).json({ message: 'Institution not found.' });
+    }
+
+    if (section === 'offerLetter') {
+      institution.offerLetter.personalInformation = personalInformation;
+    } else if (section === 'gic') {
+      institution.gic.personalDetails = personalInformation;
+    }
+
+    const data =  await institution.save();
+      return res.status(200).json(new ApiResponse(200, data, "Personal information updated successfully."))
+    
+});
+
+const editEducationDetails = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, educationDetails } = req.body;
+
+    // Ensure valid section ('offerLetter' in this case)
+    if (section !== 'offerLetter') {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating education details.'));
+    }
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update education details if section is 'offerLetter'
+    institution.offerLetter.educationDetails = educationDetails;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'Education details updated successfully.'));
+});
+
+const editPreferences = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, preferences } = req.body;
+
+    // Ensure valid section ('offerLetter' in this case)
+    if (section !== 'offerLetter') {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating preferences.'));
+    }
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update preferences if section is 'offerLetter'
+    institution.offerLetter.preferences = preferences;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'Preferences updated successfully.'));
+});
+
+const editIELTSScore = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, ieltsScore } = req.body;
+
+    // Ensure valid section ('offerLetter' in this case)
+    if (section !== 'offerLetter') {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating IELTS score.'));
+    }
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update IELTS score if section is 'offerLetter'
+    institution.offerLetter.ieltsScore = ieltsScore;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'IELTS score updated successfully.'));
+});
+
+
+const editPTEScore = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, ptes } = req.body;
+
+    // Ensure valid section ('offerLetter' in this case)
+    if (section !== 'offerLetter') {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating PTE score.'));
+    }
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update PTE score if section is 'offerLetter'
+    institution.offerLetter.ptes = ptes;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'PTE score updated successfully.'));
+});
+
+const editTOEFLScore = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, toefl } = req.body;
+
+    // Ensure valid section ('offerLetter' in this case)
+    if (section !== 'offerLetter') {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating TOEFL score.'));
+    }
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update TOEFL score if section is 'offerLetter'
+    institution.offerLetter.toefl = toefl;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'TOEFL score updated successfully.'));
+});
+
+const editCertificate = asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const { section, certificates } = req.body;
+
+    // Ensure valid section ('offerLetter' in this case)
+    if (section !== 'offerLetter') {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating certificates.'));
+    }
+
+    // Find the Institution by applicationId
+    const institution = await Institution.findOne({ _id: applicationId });
+    if (!institution) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
+    }
+
+    // Update the certificate array if section is 'offerLetter'
+    institution.offerLetter.certificate.url = certificates;
+
+    // Save the updated document to the database
+    const data = await institution.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, data, 'Certificates updated successfully.'));
+});
 
 
 
 
 
-export { registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview};
+export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate};
