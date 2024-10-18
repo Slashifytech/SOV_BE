@@ -597,8 +597,22 @@ const getApplicationById = asyncHandler(async(req, res)=>{
      ));
 })
 
+const getStudentAllApplications = asyncHandler(async(req, res)=>{
+    const { studentInformationId } = req.params;
+    const applications = await Institution.find({ studentInformationId });
+
+    // If no applications are found
+    if (!applications || applications.length === 0) {
+        return res.status(404).json(new ApiResponse(404, {}, "No applications found for the given studentInformationId"));
+    }
+
+    // If applications are found, return them
+    return res.status(200).json(new ApiResponse(200, applications, "Applications fetched successfully"));
+
+})
 
 
 
 
-export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument, getApplicationById};
+
+export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument, getApplicationById, getStudentAllApplications};
