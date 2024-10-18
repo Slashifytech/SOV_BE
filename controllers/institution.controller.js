@@ -566,7 +566,7 @@ const editOfferLetterAnsPassport = asyncHandler(async (req, res) => {
     const { offerLetter, passport } = req.body; // Extract fields to be updated from the request body
 
     // Find the Institution by applicationId
-    const institution = await Institution.findOne({ applicationId });
+    const institution = await Institution.findOne({ _id: applicationId });
     if (!institution) {
         return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
     }
