@@ -575,20 +575,22 @@ const editOfferLetterAnsPassport = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, data, 'Offer letter and passport information updated successfully.'));
 });
 
-const getApplicationById = asyncHandler(async(req, res)=>{
-    const { id } = req.params; 
+const getApplicationById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
 
-    const application = await Institution.findOne({ _id: id });
-
-   
-    if (!application) {
-        return res.status(404).json(new ApiResponse(404, {}, "Application not found"))
+    // Check if the provided id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json(new ApiResponse(400, {}, "Invalid Application ID"));
     }
 
-     return res.status(200).json(new ApiResponse(
-        200, application, "data fetch successfully"
-     ));
-})
+    const application = await Institution.findOne({ _id: mongoose.Types.ObjectId(id) });
+
+    if (!application) {
+        return res.status(404).json(new ApiResponse(404, {}, "Application not found"));
+    }
+
+    return res.status(200).json(new ApiResponse(200, application, "Data fetched successfully"));
+});
 
 const getStudentAllApplications = asyncHandler(async(req, res)=>{
     const { studentInformationId } = req.params;
