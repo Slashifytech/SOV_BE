@@ -288,55 +288,73 @@ const registerCourseFeeApplication = asyncHandler(async (req, res) => {
     return res.status(201).json(new ApiResponse(201, createdCourseFeeApplication, "Course Fee Application registered successfully"));
 });
 const applicationOverview = asyncHandler(async (req, res) => {
+    // Pagination query parameters (default to page 1 and limit 10)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Skip calculation based on page and limit
+    const skip = (page - 1) * limit;
+
+    // Step 1: Perform the aggregation query
     const aggregationResult = await Institution.aggregate([
-      {
-        $lookup: {
-          from: 'studentinformations',
-          localField: 'studentInformationId',
-          foreignField: '_id',
-          as: 'studentInfo'
+        {
+            $lookup: {
+                from: 'studentinformations',
+                localField: 'studentInformationId',
+                foreignField: '_id',
+                as: 'studentInfo'
+            }
+        },
+        {
+            $unwind: '$studentInfo'
+        },
+        {
+            $match: {
+                'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
+            }
+        },
+        {
+            $group: {
+                _id: '$studentInfo._id',
+                institutionId: { $first: '$_id' }, // Include Institution _id
+                stId: { $first: '$studentInfo.stId' }, // Include stId from StudentInformation
+                firstName: { $first: '$studentInfo.personalInformation.firstName' },
+                totalCount: { $sum: 1 },
+                underReviewCount: {
+                    $sum: { $cond: [{ $eq: ['$offerLetter.status', 'underreview'] }, 1, 0] }
+                },
+                approvedCount: {
+                    $sum: { $cond: [{ $eq: ['$offerLetter.status', 'approved'] }, 1, 0] }
+                }
+            }
         }
-      },
-      {
-        $unwind: '$studentInfo'
-      },
-      {
-        $match: {
-          'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
-        }
-      },
-      {
-        $group: {
-          _id: '$studentInfo._id',
-          institutionId: { $first: '$_id' }, // Include Institution _id
-          stId: { $first: '$studentInfo.stId' }, // Include stId from StudentInformation
-          firstName: { $first: '$studentInfo.personalInformation.firstName' },
-          totalCount: { $sum: 1 },
-          underReviewCount: {
-            $sum: { $cond: [{ $eq: ['$offerLetter.status', 'underreview'] }, 1, 0] }
-          },
-          approvedCount: {
-            $sum: { $cond: [{ $eq: ['$offerLetter.status', 'approved'] }, 1, 0] }
-          }
-        }
-      }
     ]);
-  
-    // Step 2: Format and send the response
-    const studentOverview = aggregationResult.map(result => ({
-      institutionId: result.institutionId,   // Return Institution _id
-      stId: result.stId,                    // Return stId
-      firstName: result.firstName,
-      studentInformationId: result._id,
-      totalCount: result.totalCount,
-      underReviewCount: result.underReviewCount,
-      approvedCount: result.approvedCount
+
+    // Step 2: Total number of results (before pagination)
+    const totalResults = aggregationResult.length;
+
+    // Step 3: Apply pagination (skip and limit)
+    const paginatedResults = aggregationResult.slice(skip, skip + limit);
+
+    // Step 4: Format and send the response
+    const studentOverview = paginatedResults.map(result => ({
+        institutionId: result.institutionId,   // Return Institution _id
+        stId: result.stId,                    // Return stId
+        firstName: result.firstName,
+        studentInformationId: result._id,
+        totalCount: result.totalCount,
+        underReviewCount: result.underReviewCount,
+        approvedCount: result.approvedCount
     }));
-  
+
     return res.status(200).json(new ApiResponse(200, {
-      studentOverView: studentOverview
+        total: totalResults,   // Include total number of records
+        page,
+        limit,
+        studentOverview
     }, "Data fetched successfully"));
-  });
+});
+
   
   
 
@@ -607,13 +625,25 @@ const getApplicationById = asyncHandler(async (req, res) => {
 const getStudentAllApplications = asyncHandler(async (req, res) => {
     const { studentInformationId } = req.params;
 
-    // Fetch all applications for the given studentInformationId
-    const applications = await Institution.find({ studentInformationId });
+    // Pagination query parameters (default to page 1 and limit 10)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Calculate the number of documents to skip based on the current page and limit
+    const skip = (page - 1) * limit;
+
+    // Fetch applications with pagination
+    const applications = await Institution.find({ studentInformationId })
+        .skip(skip)
+        .limit(limit);
 
     // If no applications are found
     if (!applications || applications.length === 0) {
         return res.status(404).json(new ApiResponse(404, {}, "No applications found for the given studentInformationId"));
     }
+
+    // Total count of applications (without pagination) for the given studentInformationId
+    const totalApplications = await Institution.countDocuments({ studentInformationId });
 
     // Map through the applications to return only offerLetter or gic if they exist
     const result = applications.map(application => {
@@ -642,9 +672,15 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
         };
     });
 
-    // Return the modified applications
-    return res.status(200).json(new ApiResponse(200, result, "Applications fetched successfully"));
+    // Return the paginated applications and total count
+    return res.status(200).json(new ApiResponse(200, {
+        total: totalApplications,
+        page,
+        limit,
+        applications: result
+    }, "Applications fetched successfully"));
 });
+
 
 
 
