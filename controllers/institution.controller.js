@@ -286,53 +286,57 @@ const registerCourseFeeApplication = asyncHandler(async (req, res) => {
     // Return success response
     return res.status(201).json(new ApiResponse(201, createdCourseFeeApplication, "Course Fee Application registered successfully"));
 });
-
 const applicationOverview = asyncHandler(async (req, res) => {
     const aggregationResult = await Institution.aggregate([
-        {
-          $lookup: {
-            from: 'studentinformations',
-            localField: 'studentInformationId',
-            foreignField: '_id',
-            as: 'studentInfo'
-          }
-        },
-        {
-          $unwind: '$studentInfo'
-        },
-        {
-          $match: {
-            'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
-          }
-        },
-        {
-          $group: {
-            _id: '$studentInfo._id',
-            firstName: { $first: '$studentInfo.personalInformation.firstName' },
-            totalCount: { $sum: 1 },
-            underReviewCount: {
-              $sum: { $cond: [{ $eq: ['$offerLetter.status', 'underreview'] }, 1, 0] }
-            },
-            approvedCount: {
-              $sum: { $cond: [{ $eq: ['$offerLetter.status', 'approved'] }, 1, 0] }
-            }
+      {
+        $lookup: {
+          from: 'studentinformations',
+          localField: 'studentInformationId',
+          foreignField: '_id',
+          as: 'studentInfo'
+        }
+      },
+      {
+        $unwind: '$studentInfo'
+      },
+      {
+        $match: {
+          'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
+        }
+      },
+      {
+        $group: {
+          _id: '$studentInfo._id',
+          institutionId: { $first: '$_id' }, // Include Institution _id
+          stId: { $first: '$studentInfo.stId' }, // Include stId from StudentInformation
+          firstName: { $first: '$studentInfo.personalInformation.firstName' },
+          totalCount: { $sum: 1 },
+          underReviewCount: {
+            $sum: { $cond: [{ $eq: ['$offerLetter.status', 'underreview'] }, 1, 0] }
+          },
+          approvedCount: {
+            $sum: { $cond: [{ $eq: ['$offerLetter.status', 'approved'] }, 1, 0] }
           }
         }
-      ]);
+      }
+    ]);
   
-      // Step 2: Format and send the response
-      const studentOverview = aggregationResult.map(result => ({
-        firstName: result.firstName,
-        studentInformationId: result._id,
-        totalCount: result.totalCount,
-        underReviewCount: result.underReviewCount,
-        approvedCount: result.approvedCount
-      }));
+    // Step 2: Format and send the response
+    const studentOverview = aggregationResult.map(result => ({
+      institutionId: result.institutionId,   // Return Institution _id
+      stId: result.stId,                    // Return stId
+      firstName: result.firstName,
+      studentInformationId: result._id,
+      totalCount: result.totalCount,
+      underReviewCount: result.underReviewCount,
+      approvedCount: result.approvedCount
+    }));
   
-      return res.status(200).json(new ApiResponse(200, {
-        studentOverView: studentOverview
-      }, "Data fetched successfully"));
-      });
+    return res.status(200).json(new ApiResponse(200, {
+      studentOverView: studentOverview
+    }, "Data fetched successfully"));
+  });
+  
   
 
   const editPersonalInformation = asyncHandler(async (req, res) => {
