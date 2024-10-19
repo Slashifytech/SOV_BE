@@ -583,17 +583,31 @@ const editOfferLetterAnsPassport = asyncHandler(async (req, res) => {
 const getApplicationById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
+    // Fetch application by ID
     const application = await Institution.findById(id);
 
+    // If application doesn't exist, return 404
     if (!application) {
         return res.status(404).json(new ApiResponse(404, {}, "Application not found"));
     }
 
-    return res.status(200).json(new ApiResponse(200, application, "Data fetched successfully"));
+    // Return offerLetter or gic if available
+    const response = application.offerLetter || application.gic;
+
+    // If neither offerLetter nor gic exists, return 404
+    if (!response) {
+        return res.status(404).json(new ApiResponse(404, {}, "Neither offer letter nor GIC details found"));
+    }
+
+    // Return the appropriate data
+    const message = application.offerLetter ? "Offer letter fetched successfully" : "GIC details fetched successfully";
+    return res.status(200).json(new ApiResponse(200, response, message));
 });
 
-const getStudentAllApplications = asyncHandler(async(req, res)=>{
+const getStudentAllApplications = asyncHandler(async (req, res) => {
     const { studentInformationId } = req.params;
+
+    // Fetch all applications for the given studentInformationId
     const applications = await Institution.find({ studentInformationId });
 
     // If no applications are found
@@ -601,10 +615,37 @@ const getStudentAllApplications = asyncHandler(async(req, res)=>{
         return res.status(404).json(new ApiResponse(404, {}, "No applications found for the given studentInformationId"));
     }
 
-    // If applications are found, return them
-    return res.status(200).json(new ApiResponse(200, applications, "Applications fetched successfully"));
+    // Map through the applications to return only offerLetter or gic if they exist
+    const result = applications.map(application => {
+        // Only return offerLetter or gic
+        if (application.offerLetter) {
+            return {
+                ...application.toObject(),
+                offerLetter: application.offerLetter,
+                gic: undefined // Remove gic if offerLetter is present
+            };
+        }
 
-})
+        if (application.gic) {
+            return {
+                ...application.toObject(),
+                offerLetter: undefined, // Remove offerLetter if gic is present
+                gic: application.gic
+            };
+        }
+
+        // If neither offerLetter nor gic is found, return the whole application
+        return {
+            ...application.toObject(),
+            offerLetter: undefined,
+            gic: undefined
+        };
+    });
+
+    // Return the modified applications
+    return res.status(200).json(new ApiResponse(200, result, "Applications fetched successfully"));
+});
+
 
 
 
