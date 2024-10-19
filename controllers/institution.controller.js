@@ -583,12 +583,7 @@ const editOfferLetterAnsPassport = asyncHandler(async (req, res) => {
 const getApplicationById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    // Check if the provided id is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json(new ApiResponse(400, {}, "Invalid Application ID"));
-    }
-
-    const application = await Institution.findOne({ _id: mongoose.Types.ObjectId(id) });
+    const application = await Institution.findById(id);
 
     if (!application) {
         return res.status(404).json(new ApiResponse(404, {}, "Application not found"));
