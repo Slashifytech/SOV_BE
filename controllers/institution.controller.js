@@ -682,9 +682,42 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
 });
 
 
+const reSubmitApplication = asyncHandler(async(req, res)=>{
+const { id } = req.params;  // Get _id from the URL parameter
+    const { section } = req.query;  // Get section (offerLetter or gic) and status from query
+     const status = 'underreview';
+    // Validate the input
+    if (!section || !['offerLetter', 'gic'].includes(section)) {
+        return res.status(400).json({
+            message: "Invalid section. Please provide 'offerLetter' or 'gic'."
+        });
+    }
+
+    
+
+    // Dynamic update based on the section
+    const updateField = `${section}.status`;
+
+    // Find the Institution by ID and update the relevant status
+    const institution = await Institution.findOneAndUpdate(
+        { _id: id },  // Find institution by ID
+        { $set: { [updateField]: status } },  // Dynamically set the status for the given section
+        { new: true }  // Return the updated document
+    );
+
+    if (!institution) {
+        return res.status(404).json({
+            message: 'Institution not found.'
+        });
+    }
+
+    res.status(200).json({
+        message: `${section} status updated successfully`,
+        updatedInstitution: institution
+    });
+})
 
 
 
 
-
-export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument, getApplicationById, getStudentAllApplications};
+    export {registerOfferLetter, registerGIC, getAllApplications, registerCourseFeeApplication, applicationOverview, editPersonalInformation, editEducationDetails, editPreferences, editIELTSScore, editPTEScore, editTOEFLScore, editCertificate, editStudentDocument, editOfferLetterAnsPassport, editParentDocument, getApplicationById, getStudentAllApplications, reSubmitApplication};
