@@ -171,10 +171,10 @@ Supporting you on your path to higher education abroad</p>
 }
 
 
-export const agentOfferLetterApproved = (agentFirstName, studentName, studentId, collegeName, country, courseName )=>{
+export const agentOfferLetterApproved = (agentFirstName, studentName, collegeName, country, courseName )=>{
   return `<p>Dear <strong>${agentFirstName}</strong>,</p>
 
-<p>We are pleased to inform you that the offer letter for <strong>${studentName}</strong> (Student ID: <strong>${studentId}</strong>) has been approved by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
+<p>We are pleased to inform you that the offer letter for <strong>${studentName}</strong> has been approved by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
 
 <p><strong>Student Details:</strong></p>
 <ul>
@@ -203,10 +203,10 @@ Empowering agents to help students achieve their study abroad goals</p>
 `
 }
 
-export const agentOfferLetterRejected = (agentFirstName, studentName, studentId, collegeName, country, courseName, rejectionReason)=>{
+export const agentOfferLetterRejected = (agentFirstName, studentName, collegeName, country, courseName, rejectionReason)=>{
   return `<p>Dear <strong>${agentFirstName}</strong>,</p>
 
-<p>We regret to inform you that the offer letter for <strong>${studentName}</strong> (Student ID: <strong>${studentId}</strong>) has been rejected by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
+<p>We regret to inform you that the offer letter for <strong>${studentName}</strong> has been rejected by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
 
 <p><strong>Student Details:</strong></p>
 <ul>

@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { StudentInformation } from "../models/studentInformation.model.js";
 import { Institution } from "../models/institution.model.js";
-import { studentOfferLetterApprovedTemp, studentOfferLetterRejectedTemp } from "../utils/mailTemp.js";
+import { agentOfferLetterApproved, agentOfferLetterRejected, studentOfferLetterApprovedTemp, studentOfferLetterRejectedTemp } from "../utils/mailTemp.js";
 import { sendEmail } from "../utils/sendMail.js";
 
 
@@ -187,7 +187,9 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
             new ApiResponse(404, {}, "Institution not found")
         );
     }
-
+    const userId = institution.userId;
+    // const findStudent = await Student.findOne({_id: userId}) ;
+    const findAgent  = await Agent.findOne({_id: userId});
     // Retrieve student's information
     const studentInfo = await StudentInformation.findOne({ _id: institution.studentInformationId });
     if (!studentInfo) {
@@ -210,6 +212,10 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
         }
         const temp = studentOfferLetterApprovedTemp(firstName, collegeName, country, course);
         await sendEmail({to:email, subject:"Your Offer Letter is Approved Proceed with Payment", htmlContent:temp })
+        if(findAgent){
+            const temp = agentOfferLetterApproved(findAgent.accountDetails.primaryContactPerson.name, studentName, collegeName, country, course);
+            await sendEmail({to:findAgent.accountDetails.founderOrCeo.email, subject:`Offer Letter Approved for ${studentName} Proceed with Next Steps`, htmlContent:temp }) 
+        } 
     } else if(status == 'rejected'){
         institution.offerLetter.status = status;
         if (message) {
@@ -217,6 +223,10 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
         }
         const temp = studentOfferLetterRejectedTemp(firstName,collegeName, country, course, message);
         await sendEmail({to:email, subject:"Your Offer Letter is Approved Proceed with Payment", htmlContent:temp })
+        if(findAgent){
+            const temp = agentOfferLetterRejected(findAgent.accountDetails.primaryContactPerson.name, studentName, collegeName, country, course,message );
+            await sendEmail({to:findAgent.accountDetails.founderOrCeo.email, subject:`Offer Letter Rejected for ${studentName} Action Required`, htmlContent:temp }) 
+        } 
     }
        
     } else if (section === 'gic') {
