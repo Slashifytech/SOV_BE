@@ -288,58 +288,51 @@ const registerCourseFeeApplication = asyncHandler(async (req, res) => {
 });
 
 const applicationOverview = asyncHandler(async (req, res) => {
-    // Step 1: Fetch student information (ID and firstName) for the logged-in user's agentId
-    const studentInfoIdAndName = await StudentInformation.find(
-      { agentId: req.user.id }, // Filter where agentId matches the logged-in user's id
-      '_id personalInformation.firstName' // Return both _id and firstName fields
-    );
+    const aggregationResult = await Institution.aggregate([
+        {
+          $lookup: {
+            from: 'studentinformations',
+            localField: 'studentInformationId',
+            foreignField: '_id',
+            as: 'studentInfo'
+          }
+        },
+        {
+          $unwind: '$studentInfo'
+        },
+        {
+          $match: {
+            'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
+          }
+        },
+        {
+          $group: {
+            _id: '$studentInfo._id',
+            firstName: { $first: '$studentInfo.personalInformation.firstName' },
+            totalCount: { $sum: 1 },
+            underReviewCount: {
+              $sum: { $cond: [{ $eq: ['$offerLetter.status', 'underreview'] }, 1, 0] }
+            },
+            approvedCount: {
+              $sum: { $cond: [{ $eq: ['$offerLetter.status', 'approved'] }, 1, 0] }
+            }
+          }
+        }
+      ]);
   
-    // Step 2: Extract the list of student _ids from studentInfoIdAndName
-    const studentIds = studentInfoIdAndName.map(student => student._id);
-  
-    // Step 3: Query the total number of institutions for matching student IDs
-    const totalCount = await Institution.countDocuments({
-      studentInformationId: { $in: studentIds } // Match where studentInformationId is in the list of studentIds
-    });
-  
-    // Step 4: Query the number of institutions under review for matching student IDs
-    const underReviewCount = await Institution.countDocuments({
-      studentInformationId: { $in: studentIds },
-      'offerLetter.status': 'underreview' // Assuming you are checking status under offerLetter
-    });
-  
-    // Step 5: Query the number of institutions approved for matching student IDs
-    const approvedCount = await Institution.countDocuments({
-      studentInformationId: { $in: studentIds },
-      'offerLetter.status': 'approved' // Assuming you are checking status under offerLetter
-    });
-  
-    // Step 6: Fetch the studentInformationId from the institution documents
-    const institutions = await Institution.find(
-      { studentInformationId: { $in: studentIds } },
-      'studentInformationId' // Only return the studentInformationId field
-    );
-  
-    // Step 7: Map the studentInformationId from the institution documents
-    const matchedStudentIds = institutions.map(institution => institution.studentInformationId.toString());
-  
-    // Step 8: Create a response array that pairs studentInformationId with firstName
-    const studentOverview = studentInfoIdAndName
-      .filter(student => matchedStudentIds.includes(student._id.toString()))
-      .map(student => ({
-        firstName: student.personalInformation.firstName,
-        stIds: matchedStudentIds.length > 0 ? matchedStudentIds[0] : "", // Return the first student ID or an empty string
-        studentInformationId: student._id,
-        totalCount,
-        underReviewCount,
-        approvedCount
+      // Step 2: Format and send the response
+      const studentOverview = aggregationResult.map(result => ({
+        firstName: result.firstName,
+        studentInformationId: result._id,
+        totalCount: result.totalCount,
+        underReviewCount: result.underReviewCount,
+        approvedCount: result.approvedCount
       }));
   
-    // Step 9: Return the result in the desired format
-    return res.status(200).json(new ApiResponse(200, {
-      studentOverView: studentOverview, // Rename to studentOverView
-    }, "Data fetched successfully"));
-  });
+      return res.status(200).json(new ApiResponse(200, {
+        studentOverView: studentOverview
+      }, "Data fetched successfully"));
+      });
   
 
   const editPersonalInformation = asyncHandler(async (req, res) => {
