@@ -142,11 +142,11 @@ const InstitutionSchema = new Schema({
         certificate: CertificateUploadSchema,
         type:{
             type: String,
-            default: "Offer Letter"
+            default: "offerLetter"
         },
         status: {
             type: String,
-            enum: ['underreview', 'completed', 'reject', 'pending', 'approved'],  // Valid status values
+            enum: ['underreview', 'completed', 'rejected', 'pending', 'approved'],  // Valid status values
              default: 'underreview'
         },
        
@@ -161,7 +161,7 @@ const InstitutionSchema = new Schema({
         },
         status: {
             type: String,
-            enum: ['underreview', 'completed', 'reject', 'pending', 'approved'],  // Valid status values
+            enum: ['underreview', 'completed', 'rejected', 'pending', 'approved'],  // Valid status values
             default: 'underreview'
         },
         message: { type: String }  // Optional message field

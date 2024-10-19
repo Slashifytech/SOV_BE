@@ -3,6 +3,9 @@ import { Agent } from "../models/agent.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { StudentInformation } from "../models/studentInformation.model.js";
+import { Institution } from "../models/institution.model.js";
+import { studentOfferLetterApprovedTemp, studentOfferLetterRejectedTemp } from "../utils/mailTemp.js";
+import { sendEmail } from "../utils/sendMail.js";
 
 
 // Get total agents count
@@ -166,5 +169,75 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     );
 });
 
+const changeApplicationStatus = asyncHandler(async (req, res) => {
+    const { institutionId } = req.params; 
+    const { section, status, message } = req.body;
 
-export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus};
+    // Validate required fields
+    if (!section || !status) {
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Both section and status are required")
+        );
+    }
+
+    // Find the institution
+    const institution = await Institution.findOne({ _id: institutionId }).populate('studentInformationId');
+    if (!institution) {
+        return res.status(404).json(
+            new ApiResponse(404, {}, "Institution not found")
+        );
+    }
+
+    // Retrieve student's information
+    const studentInfo = await StudentInformation.findOne({ _id: institution.studentInformationId });
+    if (!studentInfo) {
+        return res.status(404).json(
+            new ApiResponse(404, {}, "Student information not found")
+        );
+    }
+
+    const { firstName, email } = studentInfo.personalInformation;
+    const { country, course } = institution.offerLetter.preferences;
+    const collegeName = institution.offerLetter.preferences.institution; // Assuming this is the correct field for college name
+
+    // Update the status for the specified section
+    if (section === 'offerLetter') {
+
+        if(status == 'approved'){
+        institution.offerLetter.status = status;
+        if (message) {
+            institution.offerLetter.message = message;
+        }
+        const temp = studentOfferLetterApprovedTemp(firstName, collegeName, country, course);
+        await sendEmail({to:email, subject:"Your Offer Letter is Approved Proceed with Payment", htmlContent:temp })
+    } else if(status == 'rejected'){
+        institution.offerLetter.status = status;
+        if (message) {
+            institution.offerLetter.message = message;
+        }
+        const temp = studentOfferLetterRejectedTemp(firstName,collegeName, country, course, message);
+        await sendEmail({to:email, subject:"Your Offer Letter is Approved Proceed with Payment", htmlContent:temp })
+    }
+       
+    } else if (section === 'gic') {
+        institution.gic.status = status;
+        if (message) {
+            institution.gic.message = message;
+        }
+    } else {
+        return res.status(400).json(
+            new ApiResponse(400, {}, "Invalid section provided")
+        );
+    }
+
+    // Save the updated institution data
+    await institution.save();
+
+    // Return success response
+    return res.status(200).json(
+        new ApiResponse(200, { institution }, `${section} status updated successfully`)
+    );
+});
+
+
+export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus};
