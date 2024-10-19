@@ -3,6 +3,7 @@ import { StudentInformation } from "../models/studentInformation.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { CourseFeeApplicationSchema, GICSchema, OfferLetterSchema } from "../validators/institution.validator.js";
+import mongoose from 'mongoose';
 
 // Function to generate unique Application ID
 async function generateApplicationId() {
