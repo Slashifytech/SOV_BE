@@ -295,10 +295,29 @@ const applicationOverview = asyncHandler(async (req, res) => {
     // Skip calculation based on page and limit
     const skip = (page - 1) * limit;
 
-    // Search query parameters for stId and firstName
-    const { stId, firstName } = req.query;
+    // Search query parameter for searchData
+    const { searchData } = req.query;
 
-    // Step 1: Perform the aggregation query
+    // Validation: Ensure searchData is provided
+    if (!searchData) {
+        return res.status(400).json(new ApiResponse(400, null, "Please provide 'searchData' query parameter."));
+    }
+
+    // Step 1: Build the dynamic search query
+    let matchCondition = {
+        'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
+    };
+
+    // Use a regular expression to search all relevant fields in studentInfo
+    matchCondition.$or = [
+        { 'studentInfo.stId': { $regex: searchData, $options: 'i' } },  // Search in stId
+        { 'studentInfo.personalInformation.firstName': { $regex: searchData, $options: 'i' } },  // Search in firstName
+        { 'offerLetter.status': { $regex: searchData, $options: 'i' } }, // Search in offerLetter status
+        { 'institutionName': { $regex: searchData, $options: 'i' } },    // Search in institutionName or other relevant fields
+        // Add more fields as needed for search (e.g., `gic`, `type`, etc.)
+    ];
+
+    // Step 2: Perform the aggregation query
     const aggregationPipeline = [
         {
             $lookup: {
@@ -312,16 +331,7 @@ const applicationOverview = asyncHandler(async (req, res) => {
             $unwind: '$studentInfo'
         },
         {
-            $match: {
-                'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
-            }
-        },
-        // Add conditional $match stage to filter by stId or firstName if provided
-        {
-            $match: {
-                ...(stId ? { 'studentInfo.stId': { $regex: stId, $options: 'i' } } : {}), // Case-insensitive regex search for stId
-                ...(firstName ? { 'studentInfo.personalInformation.firstName': { $regex: firstName, $options: 'i' } } : {}) // Case-insensitive regex search for firstName
-            }
+            $match: matchCondition  // Apply the dynamic search condition
         },
         {
             $group: {
@@ -340,16 +350,16 @@ const applicationOverview = asyncHandler(async (req, res) => {
         }
     ];
 
-    // Step 2: Execute the aggregation query
+    // Step 3: Execute the aggregation query
     const aggregationResult = await Institution.aggregate(aggregationPipeline);
 
-    // Step 3: Total number of results (before pagination)
+    // Step 4: Total number of results (before pagination)
     const totalResults = aggregationResult.length;
 
-    // Step 4: Apply pagination (skip and limit)
+    // Step 5: Apply pagination (skip and limit)
     const paginatedResults = aggregationResult.slice(skip, skip + limit);
 
-    // Step 5: Format and send the response
+    // Step 6: Format and send the response
     const studentOverview = paginatedResults.map(result => ({
         institutionId: result.institutionId,   // Return Institution _id
         stId: result.stId,                    // Return stId
@@ -367,6 +377,7 @@ const applicationOverview = asyncHandler(async (req, res) => {
         studentOverview
     }, "Data fetched successfully"));
 });
+
 
 
   
@@ -638,7 +649,7 @@ const getApplicationById = asyncHandler(async (req, res) => {
 
 const getStudentAllApplications = asyncHandler(async (req, res) => {
     const { studentInformationId } = req.params;
-    const { applicationId, type } = req.query;  // Destructure the query parameters
+    const { searchData } = req.query;  // Destructure the search query parameter
 
     // Pagination query parameters (default to page 1 and limit 10)
     const page = parseInt(req.query.page) || 1;
@@ -647,21 +658,22 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
     // Calculate the number of documents to skip based on the current page and limit
     const skip = (page - 1) * limit;
 
-    // Build the search query
+    // Initialize the query object with studentInformationId
     const query = { studentInformationId };
 
-    // Add search filters if provided
-    if (applicationId) {
-        query.applicationId = applicationId;
+    // Check if searchData is provided, and perform a search
+    if (searchData) {
+        // Use a regular expression for case-insensitive search across all fields
+        query.$or = [
+            { applicationId: { $regex: searchData, $options: "i" } }, // Search in applicationId
+            { type: { $regex: searchData, $options: "i" } }, // Search in type
+            { offerLetter: { $regex: searchData, $options: "i" } }, // Search in offerLetter (if applicable)
+            { gic: { $regex: searchData, $options: "i" } }, // Search in gic (if applicable)
+            // Add more fields to search dynamically as needed
+        ];
     }
 
-    if (type === 'offerLetter') {
-        query['offerLetter'] = { $exists: true };  // Only return applications with offerLetter
-    } else if (type === 'gic') {
-        query['gic'] = { $exists: true };  // Only return applications with gic
-    }
-
-    // Fetch applications with pagination and filtering
+    // Fetch applications with pagination and search filter
     const applications = await Institution.find(query)
         .skip(skip)
         .limit(limit);
@@ -709,6 +721,7 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
         applications: result
     }, "Applications fetched successfully"));
 });
+
 
 
 

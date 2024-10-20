@@ -323,7 +323,7 @@ const updateStudentPersonalInformation = asyncHandler(async (req, res) => {
 });
 
 const getAllAgentStudent = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, email, stId, firstName, lastName, phone } = req.query; // Add filterable fields
+  const { page = 1, limit = 10, searchData } = req.query; // Extract searchData and pagination parameters
   const agentId = req.user.id;
 
   // Check if the user role is authorized
@@ -336,20 +336,32 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
   // Build the query object dynamically based on the provided filters
   const query = { agentId };
 
-  if (email) {
-    query['personalInformation.email'] = email;
+  // If searchData is provided, use it to search across multiple fields
+  if (searchData) {
+    query.$or = [
+      { 'personalInformation.email': { $regex: searchData, $options: 'i' } },
+      { 'stId': { $regex: searchData, $options: 'i' } },
+      { 'personalInformation.firstName': { $regex: searchData, $options: 'i' } },
+      { 'personalInformation.lastName': { $regex: searchData, $options: 'i' } },
+      { 'personalInformation.phone.phone': { $regex: searchData, $options: 'i' } },
+    ];
   }
-  if (stId) {
-    query.stId = stId;
+
+  // If specific filters are provided, add them to the query
+  if (req.query.email) {
+    query['personalInformation.email'] = req.query.email;
   }
-  if (firstName) {
-    query['personalInformation.firstName'] = firstName;
+  if (req.query.stId) {
+    query.stId = req.query.stId;
   }
-  if (lastName) {
-    query['personalInformation.lastName'] = lastName;
+  if (req.query.firstName) {
+    query['personalInformation.firstName'] = req.query.firstName;
   }
-  if (phone) {
-    query['personalInformation.phone.phone'] = phone; // Match phone number
+  if (req.query.lastName) {
+    query['personalInformation.lastName'] = req.query.lastName;
+  }
+  if (req.query.phone) {
+    query['personalInformation.phone.phone'] = req.query.phone; // Match phone number
   }
 
   // Fetch all students where agentId matches req.user.id and apply filters with pagination
@@ -381,6 +393,7 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, { students: allStudents, pagination }, "Students fetched successfully"));
 });
+
 
 
 const getStudentFormById = asyncHandler(async (req, res) => {

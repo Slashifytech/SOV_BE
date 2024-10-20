@@ -333,6 +333,95 @@ const getTotalUserCount = asyncHandler(async(req, res)=>{
     }));
 });
 
+const getAllAgentData = asyncHandler(async(req, res)=>{
+const { page = 1, limit = 10, pageStatus } = req.query;
 
+  // Build query to filter by pageStatus if provided
+  const query = {};
+  
+  // Filter by pageStatus if provided in query
+  if (pageStatus) {
+    query['pageStatus.status'] = pageStatus;
+  }
 
-export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount};
+  // Fetch companies with pagination
+  const companies = await Company.find(query)
+    .skip((parseInt(page) - 1) * parseInt(limit))  // Skip based on the current page
+    .limit(parseInt(limit))  // Limit the number of records per page
+    .select("-__v");  // Exclude version field if not needed
+
+  // Get total count for pagination calculation
+  const totalCompanies = await Company.countDocuments(query);
+
+  // Check if any companies match the query
+  if (!companies.length) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, {}, "No companies found matching the criteria"));
+  }
+
+  // Prepare pagination data
+  const pagination = {
+    currentPage: parseInt(page),
+    totalPages: Math.ceil(totalCompanies / limit),
+    pageSize: parseInt(limit),
+    totalItems: totalCompanies,
+  };
+
+  // Respond with the results and pagination info
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { companies, pagination }, "Companies fetched successfully"));
+});
+
+const getAllStudentData = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10, pageStatus } = req.query;
+  
+    // Build query to filter by pageStatus if provided
+    const query = {};
+  
+    // Filter by pageStatus if provided in query
+    if (pageStatus) {
+      query["pageStatus.status"] = pageStatus;
+    }
+  
+    // Fetch students with pagination
+    const students = await StudentInformation.find(query)
+      .skip((parseInt(page) - 1) * parseInt(limit))  // Skip based on the current page
+      .limit(parseInt(limit))  // Limit the number of records per page
+  
+    // Get total count for pagination calculation
+    const totalStudents = await StudentInformation.countDocuments(query);
+  
+    // Check if any students match the query
+    if (!students.length) {
+      return res
+        .status(404)
+        .json({
+          statusCode: 404,
+          data: {},
+          message: "No students found matching the criteria",
+        });
+    }
+  
+    // Prepare pagination data
+    const pagination = {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalStudents / limit),
+      pageSize: parseInt(limit),
+      totalItems: totalStudents,
+    };
+  
+    // Respond with the results and pagination info
+    return res
+      .status(200)
+      .json({
+        statusCode: 200,
+        data: { students, pagination },
+        message: "Students fetched successfully",
+      });
+  });
+  
+
+    
+export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllAgentData, getAllStudentData}
