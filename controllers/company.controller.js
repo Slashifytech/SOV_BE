@@ -80,11 +80,20 @@ const registerCompany = asyncHandler(async (req, res) => {
     }
 
     // If the company doesn't exist or belongs to a different agent, insert new data
-    const newCompany = new Company({
+    const {edit} = req.query;
+    let newCompany ;
+    if(edit){
+     newCompany = new Company({
+      companyDetails,
+      agentId: req.user.id,
+    });
+  } else {
+    newCompany = new Company({
       companyDetails,
       agentId: req.user.id,
       pageCount: 1
     });
+  }
 
     await newCompany.save();
 
@@ -126,7 +135,11 @@ const registerCompanyContact = asyncHandler(async (req, res) => {
     if (payload.admissionsContacts) {
       company.admissionsContacts = payload.admissionsContacts;
     }
-    company.pageCount = 2;
+    const {edit} = req.query;
+    if(!edit){
+      company.pageCount = 2;
+    }
+    
     // Save the updated company details
     await company.save();
   
@@ -161,7 +174,11 @@ const registerBankDetails = asyncHandler(async (req, res) => {
 
     // Update the bank details for the company
     company.bankDetails = payload;
-    company.pageCount = 3;
+    const {edit} = req.query;
+    if(!edit){
+      company.pageCount = 3;
+    }
+   
     // Save the updated company details
     await company.save();
 
@@ -193,7 +210,11 @@ const registerCompanyOverview = asyncHandler(async (req, res) => {
 
     // Update the company overview for the company
     company.companyOverview = payload;
-    company.pageCount = 4;
+    const {edit} = req.query;
+     if(!edit){
+      company.pageCount = 4;
+     }
+    
     // Save the updated company details
     await company.save();
 
@@ -225,7 +246,11 @@ const registerCompanyOperations = asyncHandler(async (req, res) => {
 
     // Update the company operations for the company
     company.companyOperations = payload;
-    company.pageCount = 5;
+    const {edit} = req.query;
+    if(!edit){
+      company.pageCount = 5;
+    }
+    
     // Save the updated company details
     await company.save();
 
@@ -271,8 +296,12 @@ const registerReferences = asyncHandler(async (req, res) => {
   // Update the references for the company
   company.agId = await generateAgentId();
   company.references = result.data;
-  company.pageCount = 6;
+  
   company.pageStatus.status = 'notapproved';
+  const {edit} = req.query;
+  if(!edit){
+    company.pageCount = 6;
+  }
 
   // Save the updated company details
   await company.save();

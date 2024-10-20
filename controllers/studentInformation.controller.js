@@ -79,19 +79,34 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
   if (existingRecordByEmail && existingRecordByEmail[idField]?.toString() !== req.user.id) {
     return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: Email already associated with another user"));
   }
-
+   
+  const {edit} = req.query;
   // Prepare data to save or update
-  const data = {
-    personalInformation: {
-      ...personalInformation,
-      phone: { ...personalInformation.phone },
-    },
-    passportDetails: {
-      ...passportDetails,
-    },
-    [idField]: req.user.id, // Dynamically assign either studentId or agentId
-    pageCount: 1,
-  };
+  let data;
+  if(edit){
+     data = {
+      personalInformation: {
+        ...personalInformation,
+        phone: { ...personalInformation.phone },
+      },
+      passportDetails: {
+        ...passportDetails,
+      },
+      [idField]: req.user.id, // Dynamically assign either studentId or agentId
+    };
+  } else {
+     data = {
+      personalInformation: {
+        ...personalInformation,
+        phone: { ...personalInformation.phone },
+      },
+      passportDetails: {
+        ...passportDetails,
+      },
+      [idField]: req.user.id, // Dynamically assign either studentId or agentId
+      pageCount: 1,
+    };
+  }
 
   if (existingRecordByPhone) {
     // Update the existing record
@@ -121,9 +136,28 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
       .status(400)
       .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
-
-  // Prepare the update object based on the validated payload
-  const updateData = {
+   
+  const {edit} = req.query;
+   let updateData;
+  if(edit){
+    updateData = {
+      residenceAddress: {
+        address: payload.residenceAddress?.address,
+        country: payload.residenceAddress?.country,
+        state: payload.residenceAddress?.state,
+        city: payload.residenceAddress?.city,
+        zipcode: payload.residenceAddress?.zipcode,
+      },
+      mailingAddress: {
+        address: payload.mailingAddress?.address,
+        country: payload.mailingAddress?.country,
+        state: payload.mailingAddress?.state,
+        city: payload.mailingAddress?.city,
+        zipcode: payload.mailingAddress?.zipcode,
+      },
+    };
+  } else{
+    updateData = {
     residenceAddress: {
       address: payload.residenceAddress?.address,
       country: payload.residenceAddress?.country,
@@ -140,6 +174,7 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
     },
     pageCount: 2,
   };
+}
 
   // Update the StudentInformation document
   const updatedStudentInfo = await StudentInformation.findOneAndUpdate(
@@ -172,9 +207,32 @@ const studentPreference = asyncHandler(async (req, res) => {
   const stId = await generateStudentId();
   
 
-  
+  const {edit} = req.query;
+  let studentInfo;
 
-  const studentInfo = await StudentInformation.findOneAndUpdate(
+  if(edit){
+    studentInfo = await StudentInformation.findOneAndUpdate(
+      { _id: formId },
+      {
+        $set: {
+          preferences: {
+            preferredCountry: payload.preferredCountry,
+            preferredState: payload.preferredState,
+            preferredProgram: payload.preferredProgram,
+            preferredLevelOfEducation: payload.preferredLevelOfEducation,
+            preferredInstitution: payload.preferredInstitution,
+          },
+          pageStatus:{
+            status:"notapproved"
+          },
+          stId: stId
+        },
+      },
+      { new: true }
+    );
+  } else{
+
+   studentInfo = await StudentInformation.findOneAndUpdate(
     { _id: formId },
     {
       $set: {
@@ -194,6 +252,7 @@ const studentPreference = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+}
 
   const temp = studentRegistrationComplete(studentInfo.personalInformation.firstName);
   await sendEmailVerification(studentInfo.personalInformation.email, "Registration Successful – Awaiting Admin Approval", temp)

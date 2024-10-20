@@ -250,4 +250,8 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
 });
 
 
+// const getTotalApplicationCount = asyncHandler(async(req, req))
+
+
+
 export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus};
