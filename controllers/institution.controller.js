@@ -541,14 +541,22 @@ const editCertificate = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating certificates.'));
     }
 
+    // Ensure certificates is an array (wrap it if it's a single string)
+    const certificateUrls = Array.isArray(certificates) ? certificates : [certificates];
+
     // Find the Institution by applicationId
-    const institution = await Institution.findOne({ _id: applicationId });
+    const institution = await Institution.findOne({ applicationId });
     if (!institution) {
         return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
     }
 
-    // Update the certificate array if section is 'offerLetter'
-    institution.offerLetter.certificate.url = certificates;
+    // Check if the institution has the "offerLetter" section
+    if (!institution.offerLetter) {
+        return res.status(400).json(new ApiResponse(400, {}, 'Offer letter section not found.'));
+    }
+
+    // Update the certificate array in the offerLetter section
+    institution.offerLetter.certificate.url = certificateUrls;
 
     // Save the updated document to the database
     const data = await institution.save();
@@ -556,6 +564,7 @@ const editCertificate = asyncHandler(async (req, res) => {
     // Send success response
     return res.status(200).json(new ApiResponse(200, data, 'Certificates updated successfully.'));
 });
+
 
 
 const editStudentDocument = asyncHandler(async (req, res) => {
