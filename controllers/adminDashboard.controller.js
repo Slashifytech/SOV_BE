@@ -334,83 +334,58 @@ const getTotalUserCount = asyncHandler(async(req, res)=>{
     }));
 });
 
-const getAllAgentData = asyncHandler(async(req, res)=>{
-const { page = 1, limit = 10, pageStatus } = req.query;
-
-  // Build query to filter by pageStatus if provided
-  const query = {};
+const getAllDataAgentStudent = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10, pageStatus, type } = req.query;
   
-  // Filter by pageStatus if provided in query
-  if (pageStatus) {
-    query['pageStatus.status'] = pageStatus;
-  }
-
-  // Fetch companies with pagination
-  const companies = await Company.find(query)
-    .skip((parseInt(page) - 1) * parseInt(limit))  // Skip based on the current page
-    .limit(parseInt(limit))  // Limit the number of records per page
-    .select("-__v");  // Exclude version field if not needed
-
-  // Get total count for pagination calculation
-  const totalCompanies = await Company.countDocuments(query);
-
-  // Check if any companies match the query
-  if (!companies.length) {
-    return res
-      .status(404)
-      .json(new ApiResponse(404, {}, "No companies found matching the criteria"));
-  }
-
-  // Prepare pagination data
-  const pagination = {
-    currentPage: parseInt(page),
-    totalPages: Math.ceil(totalCompanies / limit),
-    pageSize: parseInt(limit),
-    totalItems: totalCompanies,
-  };
-
-  // Respond with the results and pagination info
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { companies, pagination }, "Companies fetched successfully"));
-});
-
-const getAllStudentData = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, pageStatus } = req.query;
+    // Check if 'type' is provided and set the model accordingly
+    let query = {};
+    let dataModel;
+    
+    // Check if the 'type' query parameter is either 'agent' or 'student'
+    if (type === "agent") {
+      dataModel = Company;  // Use Company model for agent data
+    } else if (type === "student") {
+      dataModel = StudentInformation;  // Use StudentInformation model for student data
+    } else {
+      return res.status(400).json({
+        statusCode: 400,
+        data: {},
+        message: "'type' must be either 'agent' or 'student'.",
+      });
+    }
   
     // Build query to filter by pageStatus if provided
-    const query = {};
-  
-    // Filter by pageStatus if provided in query
     if (pageStatus) {
       query["pageStatus.status"] = pageStatus;
     }
   
-    // Fetch students with pagination
-    const students = await StudentInformation.find(query)
+    // Fetch data with pagination from the selected model
+    const data = await dataModel
+      .find(query)
       .skip((parseInt(page) - 1) * parseInt(limit))  // Skip based on the current page
       .limit(parseInt(limit))  // Limit the number of records per page
+      .select("-__v");  // Exclude version field if not needed
   
     // Get total count for pagination calculation
-    const totalStudents = await StudentInformation.countDocuments(query);
+    const totalData = await dataModel.countDocuments(query);
   
-    // Check if any students match the query
-    if (!students.length) {
+    // Check if any data matches the query
+    if (!data.length) {
       return res
         .status(404)
         .json({
           statusCode: 404,
           data: {},
-          message: "No students found matching the criteria",
+          message: `No ${type}s found matching the criteria`,
         });
     }
   
     // Prepare pagination data
     const pagination = {
       currentPage: parseInt(page),
-      totalPages: Math.ceil(totalStudents / limit),
+      totalPages: Math.ceil(totalData / limit),
       pageSize: parseInt(limit),
-      totalItems: totalStudents,
+      totalItems: totalData,
     };
   
     // Respond with the results and pagination info
@@ -418,10 +393,11 @@ const getAllStudentData = asyncHandler(async (req, res) => {
       .status(200)
       .json({
         statusCode: 200,
-        data: { students, pagination },
-        message: "Students fetched successfully",
+        data: { data, pagination },
+        message: `${type.charAt(0).toUpperCase() + type.slice(1)}s fetched successfully`,
       });
   });
+  
 
   const getAgentById = asyncHandler(async (req, res) => {
     // Extract the company ID from the request parameters
@@ -469,39 +445,9 @@ const getAllStudentData = asyncHandler(async (req, res) => {
       }));
   });
   
-  const updateCompanyPageStatus = asyncHandler(async (req, res) => {
-    const { id } = req.params;  // Extracting companyId from route parameters
-    const { status, message } = req.body;  // Extracting status and message from the request body
-
-    // Validate status
-    const validStatuses = ['registering', 'inProgress', 'completed', 'pending', 'rejected'];
-    if (!validStatuses.includes(status)) {
-        return res.status(400).json(new ApiResponse(400, {}, 'Invalid status value. Valid values are: "registering", "inProgress", "completed", "pending", "rejected".'));
-    }
-
-    // Find the company by companyId
-    const company = await Company.findById(id);
-    if (!company) {
-        return res.status(404).json(new ApiResponse(404, {}, 'Company not found.'));
-    }
-
-    // Update the pageStatus with the new status and message
-    company.pageStatus = {
-        status,
-        message: message||""
-    };
-
-    // Save the updated company document
-    await company.save();
-
-    // Send success response
-    return res.status(200).json(new ApiResponse(200, company, 'Page status updated successfully.'));
-});
-  
-
-const updateStudentPageStatus = asyncHandler(async (req, res) => {
-    const { id } = req.params; // Extracting studentId from route parameters
-    const { status, message } = req.body; // Extracting status and message from the request body
+  const updatePageStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params; // Extracting id from route parameters
+    const { status, message, type } = req.body; // Extracting status, message, and type from the request body
   
     // Validate status
     const validStatuses = ['registering', 'inProgress', 'completed', 'pending', 'rejected'];
@@ -511,25 +457,41 @@ const updateStudentPageStatus = asyncHandler(async (req, res) => {
       );
     }
   
-    // Find the student by studentId
-    const student = await StudentInformation.findById(id);
-
-    if (!student) {
-      return res.status(404).json(new ApiResponse(404, {}, 'Student not found.'));
+    // Check the 'type' to determine whether it's a company or student
+    let model;
+    if (type === "company") {
+      model = Company;  // Use the Company model
+    } else if (type === "student") {
+      model = StudentInformation;  // Use the StudentInformation model
+    } else {
+      return res.status(400).json(
+        new ApiResponse(400, {}, "'type' must be either 'company' or 'student'.")
+      );
+    }
+  
+    // Find the document by ID
+    const document = await model.findById(id);
+    if (!document) {
+      return res.status(404).json(
+        new ApiResponse(404, {}, `${type.charAt(0).toUpperCase() + type.slice(1)} not found.`)
+      );
     }
   
     // Update the pageStatus with the new status and message
-    student.pageStatus = {
+    document.pageStatus = {
       status,
-      message: message || "" // If no message is provided, default to an empty string
+      message: message || "",  // Default message to empty string if not provided
     };
   
-    // Save the updated student document
-    await student.save();
+    // Save the updated document
+    await document.save();
   
     // Send success response
-    return res.status(200).json(new ApiResponse(200, student, 'Page status updated successfully.'));
+    return res.status(200).json(
+      new ApiResponse(200, document, `${type.charAt(0).toUpperCase() + type.slice(1)} page status updated successfully.`)
+    );
   });
+  
 
     
-export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllAgentData, getAllStudentData, getAgentById, getStudentById, updateCompanyPageStatus, updateStudentPageStatus}
+export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllDataAgentStudent, getAgentById, getStudentById,updatePageStatus}

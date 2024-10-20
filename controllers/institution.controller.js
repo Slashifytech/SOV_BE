@@ -299,9 +299,9 @@ const applicationOverview = asyncHandler(async (req, res) => {
     const { searchData } = req.query;
 
     // Validation: Ensure searchData is provided
-    if (!searchData) {
-        return res.status(400).json(new ApiResponse(400, null, "Please provide 'searchData' query parameter."));
-    }
+    // if (!searchData) {
+    //     return res.status(400).json(new ApiResponse(400, null, "Please provide 'searchData' query parameter."));
+    // }
 
     // Step 1: Build the dynamic search query
     let matchCondition = {
