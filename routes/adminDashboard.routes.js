@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyAdmin } from "../middlewares/auth.middleware.js";
-import { changeApplicationStatus, changeStudentInformationStatus, getAllAgentData, getAllApplications, getTotalAgentsCount, getTotalStudentCount } from "../controllers/adminDashboard.controller.js";
+import { changeApplicationStatus, changeStudentInformationStatus, getAgentById, getAllAgentData, getAllApplications, getTotalAgentsCount, getTotalStudentCount } from "../controllers/adminDashboard.controller.js";
 import { getAllAgentStudent } from "../controllers/studentInformation.controller.js";
 const router = Router();
 
@@ -11,6 +11,8 @@ router.route("/all/applications").get(verifyAdmin, getAllApplications)
 router.route("/change-application-status").patch(verifyAdmin, changeApplicationStatus)
 router.route("/all/agent").patch(verifyAdmin, getAllAgentData)
 router.route("/all/student").patch(verifyAdmin, getAllAgentStudent)
+router.route("/agent/:id").patch(verifyAdmin, getAgentById)
+
 
 
 export default router;

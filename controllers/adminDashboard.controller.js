@@ -422,7 +422,54 @@ const getAllStudentData = asyncHandler(async (req, res) => {
         message: "Students fetched successfully",
       });
   });
+
+  const getAgentById = asyncHandler(async (req, res) => {
+    // Extract the company ID from the request parameters
+    const { id } = req.params;
+  
+    // Fetch the company data by its ID
+    const company = await Company.findById(id);
+  
+    // If no company is found, return an error
+    if (!company) {
+      return res.status(404).json(new ApiResponse({
+        statusCode: 404,
+        message: "Company not found",
+      }));
+    }
+  
+    // Return the company data
+    return res.status(200).json(new ApiResponse({
+        statusCode: 200,
+        data: company,
+        message: "Company fetched successfully",
+      }));
+  });
+
+  const getStudentById = asyncHandler(async (req, res) => {
+    // Extract the student ID from the request parameters
+    const { id } = req.params;
+  
+    // Fetch the student data by its ID
+    const student = await StudentInformation.findById(id);
+  
+    // If no student is found, return a 404 error
+    if (!student) {
+      return res.status(404).json(new ApiResponse({
+        statusCode: 404,
+        message: "Student not found",
+      }));
+    }
+  
+    // Return the student data with a 200 status
+    return res.status(200).json(new ApiResponse({
+        statusCode: 200,
+        data: student,
+        message: "Student fetched successfully",
+      }));
+  });
+  
   
 
     
-export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllAgentData, getAllStudentData}
+export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllAgentData, getAllStudentData, getAgentById, getStudentById}
