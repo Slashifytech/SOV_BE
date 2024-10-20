@@ -469,7 +469,67 @@ const getAllStudentData = asyncHandler(async (req, res) => {
       }));
   });
   
+  const updateCompanyPageStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params;  // Extracting companyId from route parameters
+    const { status, message } = req.body;  // Extracting status and message from the request body
+
+    // Validate status
+    const validStatuses = ['registering', 'inProgress', 'completed', 'pending', 'rejected'];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid status value. Valid values are: "registering", "inProgress", "completed", "pending", "rejected".'));
+    }
+
+    // Find the company by companyId
+    const company = await Company.findById(id);
+    if (!company) {
+        return res.status(404).json(new ApiResponse(404, {}, 'Company not found.'));
+    }
+
+    // Update the pageStatus with the new status and message
+    company.pageStatus = {
+        status,
+        message: message||""
+    };
+
+    // Save the updated company document
+    await company.save();
+
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, company, 'Page status updated successfully.'));
+});
   
 
+const updateStudentPageStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params; // Extracting studentId from route parameters
+    const { status, message } = req.body; // Extracting status and message from the request body
+  
+    // Validate status
+    const validStatuses = ['registering', 'inProgress', 'completed', 'pending', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json(
+        new ApiResponse(400, {}, 'Invalid status value. Valid values are: "registering", "inProgress", "completed", "pending", "rejected".')
+      );
+    }
+  
+    // Find the student by studentId
+    const student = await StudentInformation.findById(id);
+
+    if (!student) {
+      return res.status(404).json(new ApiResponse(404, {}, 'Student not found.'));
+    }
+  
+    // Update the pageStatus with the new status and message
+    student.pageStatus = {
+      status,
+      message: message || "" // If no message is provided, default to an empty string
+    };
+  
+    // Save the updated student document
+    await student.save();
+  
+    // Send success response
+    return res.status(200).json(new ApiResponse(200, student, 'Page status updated successfully.'));
+  });
+
     
-export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllAgentData, getAllStudentData, getAgentById, getStudentById}
+export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount, getAllAgentData, getAllStudentData, getAgentById, getStudentById, updateCompanyPageStatus, updateStudentPageStatus}

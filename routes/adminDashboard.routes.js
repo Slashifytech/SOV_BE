@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyAdmin } from "../middlewares/auth.middleware.js";
-import { changeApplicationStatus, changeStudentInformationStatus, getAgentById, getAllAgentData, getAllApplications, getTotalAgentsCount, getTotalStudentCount } from "../controllers/adminDashboard.controller.js";
+import { changeApplicationStatus, changeStudentInformationStatus, getAgentById, getAllAgentData, getAllApplications, getTotalAgentsCount, getTotalStudentCount, updateStudentPageStatus } from "../controllers/adminDashboard.controller.js";
 import { getAllAgentStudent } from "../controllers/studentInformation.controller.js";
 const router = Router();
 
@@ -12,6 +12,9 @@ router.route("/change-application-status").patch(verifyAdmin, changeApplicationS
 router.route("/all/agent").patch(verifyAdmin, getAllAgentData)
 router.route("/all/student").patch(verifyAdmin, getAllAgentStudent)
 router.route("/agent/:id").patch(verifyAdmin, getAgentById)
+router.route("/change-student-status/:id").patch(verifyAdmin, updateStudentPageStatus)
+router.route("/change-agent-status/:id").patch(verifyAdmin, updateCompanyPageStatus)
+
 
 
 
