@@ -6,6 +6,7 @@ import { StudentInformation } from "../models/studentInformation.model.js";
 import { Institution } from "../models/institution.model.js";
 import { agentOfferLetterApproved, agentOfferLetterRejected, studentOfferLetterApprovedTemp, studentOfferLetterRejectedTemp } from "../utils/mailTemp.js";
 import { sendEmail } from "../utils/sendMail.js";
+import { Company } from "../models/company.model.js";
 
 
 // Get total agents count
