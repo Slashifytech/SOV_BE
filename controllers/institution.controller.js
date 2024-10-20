@@ -295,8 +295,11 @@ const applicationOverview = asyncHandler(async (req, res) => {
     // Skip calculation based on page and limit
     const skip = (page - 1) * limit;
 
+    // Search query parameters for stId and firstName
+    const { stId, firstName } = req.query;
+
     // Step 1: Perform the aggregation query
-    const aggregationResult = await Institution.aggregate([
+    const aggregationPipeline = [
         {
             $lookup: {
                 from: 'studentinformations',
@@ -311,6 +314,13 @@ const applicationOverview = asyncHandler(async (req, res) => {
         {
             $match: {
                 'studentInfo.agentId': req.user.id  // Matching with logged-in agent's ID
+            }
+        },
+        // Add conditional $match stage to filter by stId or firstName if provided
+        {
+            $match: {
+                ...(stId ? { 'studentInfo.stId': { $regex: stId, $options: 'i' } } : {}), // Case-insensitive regex search for stId
+                ...(firstName ? { 'studentInfo.personalInformation.firstName': { $regex: firstName, $options: 'i' } } : {}) // Case-insensitive regex search for firstName
             }
         },
         {
@@ -328,15 +338,18 @@ const applicationOverview = asyncHandler(async (req, res) => {
                 }
             }
         }
-    ]);
+    ];
 
-    // Step 2: Total number of results (before pagination)
+    // Step 2: Execute the aggregation query
+    const aggregationResult = await Institution.aggregate(aggregationPipeline);
+
+    // Step 3: Total number of results (before pagination)
     const totalResults = aggregationResult.length;
 
-    // Step 3: Apply pagination (skip and limit)
+    // Step 4: Apply pagination (skip and limit)
     const paginatedResults = aggregationResult.slice(skip, skip + limit);
 
-    // Step 4: Format and send the response
+    // Step 5: Format and send the response
     const studentOverview = paginatedResults.map(result => ({
         institutionId: result.institutionId,   // Return Institution _id
         stId: result.stId,                    // Return stId
@@ -354,6 +367,7 @@ const applicationOverview = asyncHandler(async (req, res) => {
         studentOverview
     }, "Data fetched successfully"));
 });
+
 
   
   
@@ -624,6 +638,7 @@ const getApplicationById = asyncHandler(async (req, res) => {
 
 const getStudentAllApplications = asyncHandler(async (req, res) => {
     const { studentInformationId } = req.params;
+    const { applicationId, type } = req.query;  // Destructure the query parameters
 
     // Pagination query parameters (default to page 1 and limit 10)
     const page = parseInt(req.query.page) || 1;
@@ -632,18 +647,32 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
     // Calculate the number of documents to skip based on the current page and limit
     const skip = (page - 1) * limit;
 
-    // Fetch applications with pagination
-    const applications = await Institution.find({ studentInformationId })
+    // Build the search query
+    const query = { studentInformationId };
+
+    // Add search filters if provided
+    if (applicationId) {
+        query.applicationId = applicationId;
+    }
+
+    if (type === 'offerLetter') {
+        query['offerLetter'] = { $exists: true };  // Only return applications with offerLetter
+    } else if (type === 'gic') {
+        query['gic'] = { $exists: true };  // Only return applications with gic
+    }
+
+    // Fetch applications with pagination and filtering
+    const applications = await Institution.find(query)
         .skip(skip)
         .limit(limit);
 
     // If no applications are found
     if (!applications || applications.length === 0) {
-        return res.status(404).json(new ApiResponse(404, {}, "No applications found for the given studentInformationId"));
+        return res.status(404).json(new ApiResponse(404, {}, "No applications found"));
     }
 
-    // Total count of applications (without pagination) for the given studentInformationId
-    const totalApplications = await Institution.countDocuments({ studentInformationId });
+    // Total count of applications (without pagination) for the given filters
+    const totalApplications = await Institution.countDocuments(query);
 
     // Map through the applications to return only offerLetter or gic if they exist
     const result = applications.map(application => {
@@ -680,6 +709,7 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
         applications: result
     }, "Applications fetched successfully"));
 });
+
 
 
 const reSubmitApplication = asyncHandler(async(req, res)=>{

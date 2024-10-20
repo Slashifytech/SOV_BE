@@ -662,8 +662,8 @@ const requestChangeEmail = asyncHandler(async (req, res) => {
     return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
   }
 
-  const userId = req.user.id; // Assuming you have user ID from authenticated user
-  const userRole = req.user.role; // Assuming role is part of the user object
+  const userId = req.user.id; 
+  const userRole = req.user.role; 
 
   // Determine if the user is an agent or a student
   let user;

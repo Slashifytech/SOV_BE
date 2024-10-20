@@ -19,7 +19,7 @@ router.route("/student-document/:applicationId").patch( verifyJwt, editStudentDo
 router.route("/parent-document/:applicationId").patch( verifyJwt, editParentDocument);
 router.route("/offer-letter-and-passport/:applicationId").patch( verifyJwt, editOfferLetterAnsPassport);
 router.route("/application/:id").get( verifyJwt, getApplicationById);
-router.route("/application-application/:studentInformationId").get( verifyJwt, getStudentAllApplications);
+router.route("/application/:studentInformationId").get( verifyJwt, getStudentAllApplications);
 router.route("/reSubmit-application/:id").patch( verifyJwt, reSubmitApplication);
 
 

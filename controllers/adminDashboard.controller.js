@@ -250,8 +250,89 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
 });
 
 
-// const getTotalApplicationCount = asyncHandler(async(req, req))
+const getTotalApplicationCount = asyncHandler(async(req, res)=>{
+    const totalCount = await Institution.countDocuments({
+        $or: [
+            { "offerLetter.type": "offerLetter" },
+            { "gic.type": "GIC" }
+        ]
+    });
+
+    // Pending count for both offerLetter and gic
+    const pendingCount = await Institution.countDocuments({
+        $or: [
+            { "offerLetter.status": "pending" },
+            { "gic.status": "pending" }
+        ]
+    });
+
+    // Approved count for both offerLetter and gic
+    const approvedCount = await Institution.countDocuments({
+        $or: [
+            { "offerLetter.status": "approved" },
+            { "gic.status": "approved" }
+        ]
+    });
+
+    // Send response with the counts
+    
+    return res.status(200).json(new ApiResponse({
+        statusCode: 200,
+        totalCount: totalCount,
+        pendingCount: pendingCount,
+        approvedCount: approvedCount,
+        message: "Application counts retrieved successfully"
+    }));
+})
+
+
+const getTotalTicketCount = asyncHandler(async(req, res)=>{
+    const totalCount = await Ticket.countDocuments();
+
+    const pendingCount = await Ticket.countDocuments({ status: "underReview" });
+
+    const approvedCount = await Ticket.countDocuments({ status: "approved" });
+      
+    return res.status(200).json(new ApiResponse({
+        statusCode: 200,
+        totalCount,
+        pendingCount,
+        approvedCount,
+        message: "Ticket counts retrieved successfully"
+    }));
+})
+
+const getTotalUserCount = asyncHandler(async(req, res)=>{
+    const { year } = req.query;
+
+    let dateFilter = {};
+    if (year) {
+      const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
+      const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
+      
+      dateFilter = {
+        createdAt: {
+          $gte: startOfYear,
+          $lte: endOfYear
+        }
+      };
+    }
+
+    const studentCount = await Student.countDocuments(dateFilter);
+    
+    const agentCount = await Agent.countDocuments(dateFilter);
+
+    const totalUserCount = studentCount + agentCount;
+
+    return res.status(200).json(new ApiResponse({
+      statusCode: 200,
+      totalUserCount,
+      studentCount,
+      agentCount,
+      message: `User counts retrieved successfully for the year ${year || 'all years'}`,
+    }));
+});
 
 
 
-export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus};
+export {getTotalAgentsCount, getTotalStudentCount, changeStudentInformationStatus, changeApplicationStatus, getTotalApplicationCount, getTotalTicketCount, getTotalUserCount};
