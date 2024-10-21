@@ -534,36 +534,41 @@ const editTOEFLScore = asyncHandler(async (req, res) => {
 
 const editCertificate = asyncHandler(async (req, res) => {
     const { applicationId } = req.params;
-    const { section, certificates } = req.body;
+        const { certificates } = req.body;
 
-    // Ensure valid section ('offerLetter' in this case)
-    if (section !== 'offerLetter') {
-        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating certificates.'));
-    }
+        // Ensure certificates is an array (wrap it if it's a single string)
+        const certificateUrls = Array.isArray(certificates) ? certificates : [certificates];
 
-    // Ensure certificates is an array (wrap it if it's a single string)
-    const certificateUrls = Array.isArray(certificates) ? certificates : [certificates];
+        // Find the Institution by applicationId
+        const institution = await Institution.findById( applicationId );
+        if (!institution) {
+            return res.status(404).json(new ApiResponse({
+                statusCode: 404,
+                message: 'Institution not found.'
+            }));
+        }
 
-    // Find the Institution by applicationId
-    const institution = await Institution.findOne({ applicationId });
-    if (!institution) {
-        return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
-    }
+        // Check if the institution has the "offerLetter" section
+        if (!institution.offerLetter || !institution.offerLetter.certificate) {
+            return res.status(400).json(new ApiResponse({
+                statusCode: 400,
+                message: 'Offer letter or certificates section not found.'
+            }));
+        }
 
-    // Check if the institution has the "offerLetter" section
-    if (!institution.offerLetter) {
-        return res.status(400).json(new ApiResponse(400, {}, 'Offer letter section not found.'));
-    }
+        // Update the certificate array in the offerLetter section
+        institution.offerLetter.certificate.url = certificateUrls;
 
-    // Update the certificate array in the offerLetter section
-    institution.offerLetter.certificate.url = certificateUrls;
+        // Save the updated document to the database
+        const updatedInstitution = await institution.save();
 
-    // Save the updated document to the database
-    const data = await institution.save();
-
-    // Send success response
-    return res.status(200).json(new ApiResponse(200, data, 'Certificates updated successfully.'));
-});
+        // Send success response
+        return res.status(200).json(new ApiResponse({
+            statusCode: 200,
+            data: updatedInstitution,
+            message: 'Certificates updated successfully.'
+        }));
+    })
 
 
 

@@ -68,7 +68,6 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
         "-password -refreshToken"
       );
     }
-    console.log(user.role, "+++>>><<<<<<<")
     if (user.role !== "0") {
       return res
         .status(401)

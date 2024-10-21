@@ -321,66 +321,91 @@ const getTotalUserCount = asyncHandler(async(req, res)=>{
 const getAllDataAgentStudent = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, pageStatus, type } = req.query;
   
-    // Check if 'type' is provided and set the model accordingly
-    let query = {};
-    let dataModel;
-    
-    // Check if the 'type' query parameter is either 'agent' or 'student'
-    if (type === "agent") {
-      dataModel = Company;  // Use Company model for agent data
-    } else if (type === "student") {
-      dataModel = StudentInformation;  // Use StudentInformation model for student data
-    } else {
-      return res.status(400).json({
-        statusCode: 400,
-        data: {},
-        message: "'type' must be either 'agent' or 'student'.",
-      });
-    }
-  
     // Build query to filter by pageStatus if provided
+    let query = {};
     if (pageStatus) {
       query["pageStatus.status"] = pageStatus;
     }
   
-    // Fetch data with pagination from the selected model
-    const data = await dataModel
-      .find(query)
-      .skip((parseInt(page) - 1) * parseInt(limit))  // Skip based on the current page
-      .limit(parseInt(limit))  // Limit the number of records per page
-      .select("-__v");  // Exclude version field if not needed
+    // Define a function to fetch data with pagination
+    const fetchDataWithPagination = async (model, query) => {
+      const data = await model
+        .find(query)
+        .skip((parseInt(page) - 1) * parseInt(limit)) // Skip based on the current page
+        .limit(parseInt(limit)) // Limit the number of records per page
+        .select("-__v"); // Exclude version field if not needed
+      
+      const totalData = await model.countDocuments(query); // Get total count for pagination
   
-    // Get total count for pagination calculation
-    const totalData = await dataModel.countDocuments(query);
+      return { data, totalData };
+    };
   
-    // Check if any data matches the query
-    if (!data.length) {
-      return res
-        .status(404)
-        .json({
+    // Case when 'type' is either 'agent' or 'student'
+    if (type === "agent" || type === "student") {
+      let dataModel = type === "agent" ? Company : StudentInformation; // Determine the model based on 'type'
+      
+      const { data, totalData } = await fetchDataWithPagination(dataModel, query);
+  
+      if (!data.length) {
+        return res.status(404).json({
           statusCode: 404,
           data: {},
           message: `No ${type}s found matching the criteria`,
         });
-    }
+      }
   
-    // Prepare pagination data
-    const pagination = {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(totalData / limit),
-      pageSize: parseInt(limit),
-      totalItems: totalData,
-    };
+      const pagination = {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalData / limit),
+        pageSize: parseInt(limit),
+        totalItems: totalData,
+      };
   
-    // Respond with the results and pagination info
-    return res
-      .status(200)
-      .json({
+      return res.status(200).json({
         statusCode: 200,
         data: { data, pagination },
         message: `${type.charAt(0).toUpperCase() + type.slice(1)}s fetched successfully`,
       });
+  
+    } else if (!type) {
+      // Case when 'type' is not provided: Fetch both agent and student data
+      const [agentData, studentData] = await Promise.all([
+        fetchDataWithPagination(Company, query), // Fetch agent data (company)
+        fetchDataWithPagination(StudentInformation, query), // Fetch student data
+      ]);
+  
+      const combinedData = {
+        agents: agentData.data,
+        students: studentData.data,
+      };
+  
+      const pagination = {
+        currentPage: parseInt(page),
+        totalPages: Math.max(
+          Math.ceil(agentData.totalData / limit),
+          Math.ceil(studentData.totalData / limit)
+        ),
+        pageSize: parseInt(limit),
+        totalAgents: agentData.totalData,
+        totalStudents: studentData.totalData,
+      };
+  
+      return res.status(200).json({
+        statusCode: 200,
+        data: { combinedData, pagination },
+        message: "Agents and students fetched successfully",
+      });
+  
+    } else {
+      // If 'type' is invalid, return an error
+      return res.status(400).json({
+        statusCode: 400,
+        data: {},
+        message: "'type' must be either 'agent', 'student', or omitted.",
+      });
+    }
   });
+  
   
 
   const getAgentById = asyncHandler(async (req, res) => {
