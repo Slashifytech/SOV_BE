@@ -63,45 +63,32 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     
-    // Calculate the number of documents to skip for pagination
     const skip = (page - 1) * limit;
-
-    // Initialize the query object (without user-specific filter)
     const query = {};
-
-    // Create an array to hold the $or conditions
     const orConditions = [];
-
-    // Add filters for offerLetter if they are provided
     if (req.query.applicationId) {
         query.applicationId = req.query.applicationId;
     }
     if (req.query.fullName) {
-        // Add condition for fullName in both offerLetter and gic using $or
         orConditions.push(
             { 'offerLetter.personalInformation.fullName': { $regex: req.query.fullName, $options: 'i' } },
             { 'gic.personalDetails.fullName': { $regex: req.query.fullName, $options: 'i' } }
         );
     }
     if (req.query.phoneNumber) {
-        // Add condition for phoneNumber in both offerLetter and gic using $or
         orConditions.push(
             { 'offerLetter.personalInformation.phoneNumber': req.query.phoneNumber },
             { 'gic.personalDetails.phoneNumber': req.query.phoneNumber }
         );
     }
     if (req.query.institution) {
-        // Add institution filter for offerLetter
         query['offerLetter.preferences.institution'] = { $regex: req.query.institution, $options: 'i' };
     }
     if (req.query.country) {
-        // Add country filter for offerLetter
         query['offerLetter.preferences.country'] = { $regex: req.query.country, $options: 'i' };
     }
 
-    // Add status filter if provided
     if (req.query.status) {
-        // Allow multiple status values using $in
         const validStatuses = ['underreview', 'completed', 'reject', 'pending', 'approved'];
         if (validStatuses.includes(req.query.status)) {
             query.$or = [
@@ -113,7 +100,6 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         }
     }
 
-    // Add filter for specific application types
     if (req.query.filterType) {
         switch (req.query.filterType.toLowerCase()) {
             case 'offerletter':
@@ -126,14 +112,12 @@ export const getAllApplications = asyncHandler(async (req, res) => {
                 query['gic'] = { $exists: true };
                 break;
             case 'all':
-                // No additional filter, retrieve all types
                 break;
             default:
                 return res.status(400).json(new ApiResponse(400, {}, "Invalid filter type provided."));
         }
     }
 
-    // If there are any OR conditions, merge them with the main query using $or
     if (orConditions.length > 0) {
         query.$or = orConditions;
     }

@@ -223,11 +223,12 @@ const login = asyncHandler(async (req, res) => {
 
   let user;
   let loggedInUser;
+   
+  
 
   if (payload.role === "3") {
     console.log("Payload email:", payload.email.trim().toLowerCase());
     
-    // Query user by email (ensure email is trimmed and lowercased)
     user = await Student.findOne({ email: payload.email.trim().toLowerCase() });
     console.log("Queried user:", user);
     
@@ -235,7 +236,6 @@ const login = asyncHandler(async (req, res) => {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
 
-    // Check if the password is correct
     const isPasswordValid = await user.isPasswordCorrect(payload.password);
     if (!isPasswordValid) {
       return res.status(400).json(new ApiResponse(400, {}, "Invalid password"));
@@ -243,7 +243,7 @@ const login = asyncHandler(async (req, res) => {
 
     loggedInUser = await Student.findById(user._id).select("-password -refreshToken");
 
-  } else if (payload.role === "2") {
+  } else if (payload.role === "2" || payload.role === '0') {
     user = await Agent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
     
     if (!user) {

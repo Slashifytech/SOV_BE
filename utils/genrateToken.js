@@ -11,6 +11,7 @@ export const generateTokens = (user) => {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
   });
 
+
   // Generate the refresh token
   const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY,

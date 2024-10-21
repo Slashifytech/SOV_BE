@@ -56,19 +56,20 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
         .status(401)
         .json(new ApiResponse(401, {}, "Unauthorized request"));
     }
-
+     
     const decodeToken = await jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET
     );
+    
     let user;
-    if (decodeToken.role === "admin") {
+    if (decodeToken.role === "0") {
       user = await Agent.findById(decodeToken.id).select(
         "-password -refreshToken"
       );
     }
-
-    if (user.role !== "ADMIN") {
+    console.log(user.role, "+++>>><<<<<<<")
+    if (user.role !== "0") {
       return res
         .status(401)
         .json(new ApiResponse(401, {}, "Unauthorized user"));
@@ -79,7 +80,7 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
         .status(401)
         .json(new ApiResponse(401, {}, "Invalid accessToken"));
     }
-
+   
     req.user = user;
     next();
   } catch (error) {
