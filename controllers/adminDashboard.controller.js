@@ -62,32 +62,42 @@ const changeStudentInformationStatus = asyncHandler(async (req, res) => {
 export const getAllApplications = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    
     const skip = (page - 1) * limit;
     const query = {};
     const orConditions = [];
+
+    // Filtering by applicationId if provided
     if (req.query.applicationId) {
         query.applicationId = req.query.applicationId;
     }
+
+    // Filtering by fullName if provided
     if (req.query.fullName) {
         orConditions.push(
             { 'offerLetter.personalInformation.fullName': { $regex: req.query.fullName, $options: 'i' } },
             { 'gic.personalDetails.fullName': { $regex: req.query.fullName, $options: 'i' } }
         );
     }
+
+    // Filtering by phoneNumber if provided
     if (req.query.phoneNumber) {
         orConditions.push(
             { 'offerLetter.personalInformation.phoneNumber': req.query.phoneNumber },
             { 'gic.personalDetails.phoneNumber': req.query.phoneNumber }
         );
     }
+
+    // Filtering by institution if provided
     if (req.query.institution) {
         query['offerLetter.preferences.institution'] = { $regex: req.query.institution, $options: 'i' };
     }
+
+    // Filtering by country if provided
     if (req.query.country) {
         query['offerLetter.preferences.country'] = { $regex: req.query.country, $options: 'i' };
     }
 
+    // Filtering by status
     if (req.query.status) {
         const validStatuses = ['underreview', 'completed', 'reject', 'pending', 'approved'];
         if (validStatuses.includes(req.query.status)) {
@@ -100,18 +110,17 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         }
     }
 
+    // Filtering by application type (offerLetter, gic, etc.)
     if (req.query.filterType) {
         switch (req.query.filterType.toLowerCase()) {
             case 'offerletter':
                 query['offerLetter'] = { $exists: true };
                 break;
-            case 'coursefeeapplication':
-                query['courseFeeApplication'] = { $exists: true };
-                break;
-            case 'visa':
+            case 'gic':
                 query['gic'] = { $exists: true };
                 break;
             case 'all':
+                // No additional filtering for all
                 break;
             default:
                 return res.status(400).json(new ApiResponse(400, {}, "Invalid filter type provided."));
@@ -122,7 +131,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         query.$or = orConditions;
     }
 
-    // Fetch paginated applications with the applied filters
+    // Fetch paginated applications with applied filters
     const applications = await Institution.find(query)
         .select("-__v") // Exclude __v field
         .skip(skip)
@@ -132,28 +141,31 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     // Get the total number of matching applications for pagination
     const totalApplications = await Institution.countDocuments(query);
 
-    // Transform applications to include specific fields
-    const transformedApplications = applications.map(app => ({
-        applicationId: app.applicationId,
-        userId: app.userId,
-        offerLetter: app.offerLetter,
-        gic: app.gic,
-        courseFeeApplication: app.courseFeeApplication,
-        createdAt: app.createdAt,
-        updatedAt: app.updatedAt,
-    }));
+    // Transform applications to include userType, userId (stId or agId), and application type
+    const transformedApplications = applications.map(app => {
+        let userType = app.stId ? 'student' : 'agent';
+        let userId = app.stId || app.agId;
+        let applicationType = app.offerLetter ? 'offerLetter' : (app.gic ? 'gic' : 'unknown');
 
-    // Return a success response with paginated data
-    return res.status(200).json(
-        new ApiResponse(200, {
-            applications: transformedApplications,
-            currentPage: page,
-            totalPages: Math.ceil(totalApplications / limit),
-            totalApplications,
-        }, "Data fetched successfully")
-    );
+        return {
+            applicationId: app.applicationId,
+            userId: userId,
+            userType: userType,
+            applicationType: applicationType,
+            offerLetter: app.offerLetter,
+            gic: app.gic,
+            status: app.offerLetter?.status || app.gic?.status,
+        };
+    });
+
+    // Respond with paginated applications and metadata
+    res.status(200).json({
+        total: totalApplications,
+        page: page,
+        limit: limit,
+        applications: transformedApplications,
+    });
 });
-
 const changeApplicationStatus = asyncHandler(async (req, res) => {
     const { institutionId } = req.params; 
     const { section, status, message } = req.body;
