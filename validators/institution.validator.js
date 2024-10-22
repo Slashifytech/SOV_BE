@@ -47,7 +47,7 @@ const PTESchema = z.object({
   reading: z.number().optional(),
   writing: z.number().optional(),
   speaking: z.number().optional(),
-  overallBands: z.number().optional(),
+  overallBand: z.number().optional(),
 });
 
 // Zod schema for TOEFL intakeScore
@@ -56,7 +56,7 @@ const TOEFLSchema = z.object({
   reading: z.number().optional(),
   writing: z.number().optional(),
   speaking: z.number().optional(),
-  overallBands: z.number().optional(),
+  overallBand: z.number().optional(),
 });
 
 // Zod schema for Document Upload
