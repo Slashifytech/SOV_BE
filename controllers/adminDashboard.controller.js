@@ -8,7 +8,6 @@ import { agentOfferLetterApproved, agentOfferLetterRejected, studentOfferLetterA
 import { sendEmail } from "../utils/sendMail.js";
 import { Company } from "../models/company.model.js";
 
-
 // Get total agents count
 const getTotalAgentsCount = asyncHandler (async (req, res)=>{
     const totalAgent = await Agent.countDocuments({role: 'AGENT'});
@@ -158,14 +157,29 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         };
     });
 
+    // Pagination logic
+    const totalPages = Math.ceil(totalApplications / limit);
+    const currentPage = page;
+    const previousPage = currentPage > 1 ? currentPage - 1 : null;
+    const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+    const hasPreviousPage = currentPage > 1;
+    const hasNextPage = currentPage < totalPages;
+
     // Respond with paginated applications and metadata
     res.status(200).json({
         total: totalApplications,
-        page: page,
-        limit: limit,
+        currentPage,
+        previousPage,
+        nextPage,
+        totalPages,
+        limit,
+        hasPreviousPage,
+        hasNextPage,
         applications: transformedApplications,
     });
 });
+
+
 const changeApplicationStatus = asyncHandler(async (req, res) => {
     const { institutionId } = req.params; 
     const { section, status, message } = req.body;
@@ -332,91 +346,101 @@ const getTotalUserCount = asyncHandler(async(req, res)=>{
 
 const getAllDataAgentStudent = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, pageStatus, type } = req.query;
-  
+
     // Build query to filter by pageStatus if provided
     let query = {};
     if (pageStatus) {
-      query["pageStatus.status"] = pageStatus;
+        query["pageStatus.status"] = pageStatus;
     }
-  
+
     // Define a function to fetch data with pagination
     const fetchDataWithPagination = async (model, query) => {
-      const data = await model
-        .find(query)
-        .skip((parseInt(page) - 1) * parseInt(limit)) // Skip based on the current page
-        .limit(parseInt(limit)) // Limit the number of records per page
-        .select("-__v"); // Exclude version field if not needed
-      
-      const totalData = await model.countDocuments(query); // Get total count for pagination
-  
-      return { data, totalData };
+        const data = await model
+            .find(query)
+            .skip((parseInt(page) - 1) * parseInt(limit)) // Skip based on the current page
+            .limit(parseInt(limit)) // Limit the number of records per page
+            .select("-__v"); // Exclude version field if not needed
+        
+        const totalData = await model.countDocuments(query); // Get total count for pagination
+
+        const totalPages = Math.ceil(totalData / limit);
+        const hasPreviousPage = page > 1;
+        const hasNextPage = page < totalPages;
+
+        return { data, totalData, totalPages, hasPreviousPage, hasNextPage };
     };
-  
+
     // Case when 'type' is either 'agent' or 'student'
     if (type === "agent" || type === "student") {
-      let dataModel = type === "agent" ? Company : StudentInformation; // Determine the model based on 'type'
-      
-      const { data, totalData } = await fetchDataWithPagination(dataModel, query);
-  
-      if (!data.length) {
-        return res.status(404).json({
-          statusCode: 404,
-          data: {},
-          message: `No ${type}s found matching the criteria`,
+        let dataModel = type === "agent" ? Company : StudentInformation; // Determine the model based on 'type'
+        
+        const { data, totalData, totalPages, hasPreviousPage, hasNextPage } = await fetchDataWithPagination(dataModel, query);
+
+        if (!data.length) {
+            return res.status(404).json({
+                statusCode: 404,
+                data: {},
+                message: `No ${type}s found matching the criteria`,
+            });
+        }
+
+        const pagination = {
+            currentPage: parseInt(page),
+            previousPage: hasPreviousPage ? parseInt(page) - 1 : null,
+            nextPage: hasNextPage ? parseInt(page) + 1 : null,
+            hasPreviousPage,
+            hasNextPage,
+            totalPages,
+            pageSize: parseInt(limit),
+            totalItems: totalData,
+        };
+
+        return res.status(200).json({
+            statusCode: 200,
+            data: { data, pagination },
+            message: `${type.charAt(0).toUpperCase() + type.slice(1)}s fetched successfully`,
         });
-      }
-  
-      const pagination = {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalData / limit),
-        pageSize: parseInt(limit),
-        totalItems: totalData,
-      };
-  
-      return res.status(200).json({
-        statusCode: 200,
-        data: { data, pagination },
-        message: `${type.charAt(0).toUpperCase() + type.slice(1)}s fetched successfully`,
-      });
-  
+
     } else if (!type) {
-      // Case when 'type' is not provided: Fetch both agent and student data
-      const [agentData, studentData] = await Promise.all([
-        fetchDataWithPagination(Company, query), // Fetch agent data (company)
-        fetchDataWithPagination(StudentInformation, query), // Fetch student data
-      ]);
-  
-      const combinedData = {
-        agents: agentData.data,
-        students: studentData.data,
-      };
-  
-      const pagination = {
-        currentPage: parseInt(page),
-        totalPages: Math.max(
-          Math.ceil(agentData.totalData / limit),
-          Math.ceil(studentData.totalData / limit)
-        ),
-        pageSize: parseInt(limit),
-        totalAgents: agentData.totalData,
-        totalStudents: studentData.totalData,
-      };
-  
-      return res.status(200).json({
-        statusCode: 200,
-        data: { combinedData, pagination },
-        message: "Agents and students fetched successfully",
-      });
-  
+        // Case when 'type' is not provided: Fetch both agent and student data
+        const [agentData, studentData] = await Promise.all([
+            fetchDataWithPagination(Company, query), // Fetch agent data (company)
+            fetchDataWithPagination(StudentInformation, query), // Fetch student data
+        ]);
+
+        const combinedData = {
+            agents: agentData.data,
+            students: studentData.data,
+        };
+
+        const pagination = {
+            currentPage: parseInt(page),
+            previousPage: agentData.hasPreviousPage || studentData.hasPreviousPage ? parseInt(page) - 1 : null,
+            nextPage: agentData.hasNextPage || studentData.hasNextPage ? parseInt(page) + 1 : null,
+            hasPreviousPage: agentData.hasPreviousPage || studentData.hasPreviousPage,
+            hasNextPage: agentData.hasNextPage || studentData.hasNextPage,
+            totalPages: Math.max(agentData.totalPages, studentData.totalPages),
+            pageSize: parseInt(limit),
+            totalAgents: agentData.totalData,
+            totalStudents: studentData.totalData,
+        };
+
+        return res.status(200).json({
+            statusCode: 200,
+            data: { combinedData, pagination },
+            message: "Agents and students fetched successfully",
+        });
+
     } else {
-      // If 'type' is invalid, return an error
-      return res.status(400).json({
-        statusCode: 400,
-        data: {},
-        message: "'type' must be either 'agent', 'student', or omitted.",
-      });
+        // If 'type' is invalid, return an error
+        return res.status(400).json({
+            statusCode: 400,
+            data: {},
+            message: "'type' must be either 'agent', 'student', or omitted.",
+        });
     }
-  });
+});
+
   
   
 
