@@ -19,15 +19,17 @@ export const getTotalStudentCount = asyncHandler(async (req, res) => {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-    // Count student records for the last 7 days
+    // Count student records for the last 7 days where pageCount is 3
     const insertedRecords = await StudentInformation.countDocuments({
       agentId: req.user.id,
+      pageCount: 3,
       createdAt: { $gte: sevenDaysAgo }
     });
   
-    // Count student records for the previous 7 days (from 14 days ago to 7 days ago)
+    // Count student records for the previous 7 days (from 14 days ago to 7 days ago) where pageCount is 3
     const previousRecordCount = await StudentInformation.countDocuments({
       agentId: req.user.id,
+      pageCount: 3,
       createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }
     });
   
@@ -36,9 +38,10 @@ export const getTotalStudentCount = asyncHandler(async (req, res) => {
       ? (((insertedRecords - previousRecordCount) / previousRecordCount) * 100).toFixed(2)
       : (insertedRecords > 0 ? 100 : 0); // If no previous records, it's 100% increase if new records exist
   
-    // Count the total student records for the agent from the beginning to the current date
+    // Count the total student records for the agent from the beginning to the current date where pageCount is 3
     const totalRecords = await StudentInformation.countDocuments({
-      agentId: req.user.id
+      agentId: req.user.id,
+      pageCount: 3
     });
   
     // Return only total student count and percentage increase
@@ -47,6 +50,7 @@ export const getTotalStudentCount = asyncHandler(async (req, res) => {
       percentageIncrease
     }, "Total student count and percentage increase fetched successfully"));
   });
+  
   
 
 
