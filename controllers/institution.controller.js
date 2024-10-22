@@ -488,15 +488,15 @@ const editPTEScore = asyncHandler(async (req, res) => {
 
     // Validate the structure of the PTE object
     const { listening, reading, writing, speaking, overallBands } = ptes;
-    if (
-        typeof listening !== 'number' || 
-        typeof reading !== 'number' || 
-        typeof writing !== 'number' || 
-        typeof speaking !== 'number' || 
-        typeof overallBands !== 'number'
-    ) {
-        return res.status(400).json(new ApiResponse(400, {}, 'Invalid PTE score format. All scores must be numbers.'));
-    }
+    // if (
+    //     typeof listening !== 'number' || 
+    //     typeof reading !== 'number' || 
+    //     typeof writing !== 'number' || 
+    //     typeof speaking !== 'number' || 
+    //     typeof overallBands !== 'number'
+    // ) {
+    //     return res.status(400).json(new ApiResponse(400, {}, 'Invalid PTE score format. All scores must be numbers.'));
+    // }
 
     // Update PTE score in the offerLetter section
     institution.offerLetter.ptes = {
