@@ -76,7 +76,7 @@ const PTESchema = new Schema({
     reading: { type: Number, required: false },
     writing: { type: Number, required: false },
     speaking: { type: Number, required: false },
-    overallBands: { type: Number, required: false },
+    overallBand: { type: Number, required: false },
 }, { _id: false });  // Set _id to false if you don't want separate IDs for embedded sub-documents
 
 // Schema for TOEFL Scores
@@ -85,7 +85,7 @@ const TOEFLSchema = new Schema({
     reading: { type: Number, required: false },
     writing: { type: Number, required: false },
     speaking: { type: Number, required: false },
-    overallBands: { type: Number, required: false },
+    overallBand: { type: Number, required: false },
 }, { _id: false });
 
 // Schema for Document Upload
