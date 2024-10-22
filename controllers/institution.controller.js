@@ -44,16 +44,28 @@ const registerOfferLetter = asyncHandler(async (req, res) => {
     }
     
     // Find student information based on provided ID
-    const studentInformation = await StudentInformation.findOne({_id:payload.offerLetter.studentInformationId});
+    const studentInformation = await StudentInformation.findOne({_id: payload.offerLetter.studentInformationId});
     if (!studentInformation) {
         return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
     }
+
     // Check authorization based on user role and student/agent ID
     const isAgentAuthorized = user.role === '2' && studentInformation.agentId?.toString() === user.id;
     const isStudentAuthorized = user.role === '3' && studentInformation.studentId?.toString() === user.id;
     
     if (!(isAgentAuthorized || isStudentAuthorized)) {
         return res.status(403).json(new ApiResponse(403, {}, "Unauthorized user"));
+    }
+
+    // Check if an offer letter with the same studentInformationId, course, and institution already exists
+    const existingOffer = await Institution.findOne({
+        studentInformationId: payload.offerLetter.studentInformationId,
+        'offerLetter.preferences.course': payload.offerLetter.preferences.course,
+        'offerLetter.preferences.institution': payload.offerLetter.preferences.institution
+    });
+
+    if (existingOffer) {
+        return res.status(409).json(new ApiResponse(409, {}, "You have already submitted an offer letter for this institution and course"));
     }
 
     // Generate unique application ID
@@ -74,6 +86,7 @@ const registerOfferLetter = asyncHandler(async (req, res) => {
     // Return success response
     return res.status(201).json(new ApiResponse(201, createdOffer, "Offer letter registered successfully"));
 });
+
 
 const registerGIC = asyncHandler(async (req, res) => {
     const { body: payload, user } = req;
@@ -488,15 +501,7 @@ const editPTEScore = asyncHandler(async (req, res) => {
 
     // Validate the structure of the PTE object
     const { listening, reading, writing, speaking, overallBand } = ptes;
-    // if (
-    //     typeof listening !== 'number' || 
-    //     typeof reading !== 'number' || 
-    //     typeof writing !== 'number' || 
-    //     typeof speaking !== 'number' || 
-    //     typeof overallBands !== 'number'
-    // ) {
-    //     return res.status(400).json(new ApiResponse(400, {}, 'Invalid PTE score format. All scores must be numbers.'));
-    // }
+    
 
     // Update PTE score in the offerLetter section
     institution.offerLetter.ptes = {
