@@ -427,9 +427,9 @@ const getStudentFormById = asyncHandler(async (req, res) => {
 });
 
 const deleteStudentInformation = asyncHandler(async (req, res) => {
-  const { studentId } = req.params;
+  const { id } = req.params;
 
-  const studentInfo = await StudentInformation.findById(studentId);
+  const studentInfo = await StudentInformation.findById(id);
   if (!studentInfo) {
       return res.status(404).json(new ApiResponse(404, {}, 'Student information not found.'));
   }

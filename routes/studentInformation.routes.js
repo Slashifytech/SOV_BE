@@ -34,6 +34,6 @@ router.route("/personal-information/:formId")
   );
   router.route("/agent-student").get(verifyJwt, getAllAgentStudent);
   router.route("/student-information/:formId").get(verifyJwt, getStudentFormById);
-  router.route("/student-information/:formId").delete(verifyJwt, deleteStudentInformation);
+  router.route("/student-information/:id").delete(verifyJwt, deleteStudentInformation);
 
 export default router;
