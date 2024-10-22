@@ -687,16 +687,13 @@ const getApplicationById = asyncHandler(async (req, res) => {
 
 const getStudentAllApplications = asyncHandler(async (req, res) => {
     const { studentInformationId } = req.params;
-    const { searchData } = req.query;  // Destructure the search query parameter
+    const { searchData } = req.query; 
 
-    // Pagination query parameters (default to page 1 and limit 10)
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Calculate the number of documents to skip based on the current page and limit
     const skip = (page - 1) * limit;
 
-    // Initialize the query object with studentInformationId
     const query = { studentInformationId };
 
     // Check if searchData is provided, and perform a search
@@ -704,9 +701,9 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
         // Use a regular expression for case-insensitive search across all fields
         query.$or = [
             { applicationId: { $regex: searchData, $options: "i" } }, // Search in applicationId
-            { type: { $regex: searchData, $options: "i" } }, // Search in type
-            { offerLetter: { $regex: searchData, $options: "i" } }, // Search in offerLetter (if applicable)
-            { gic: { $regex: searchData, $options: "i" } }, // Search in gic (if applicable)
+            { "offerLetter.personalInformation.fullName": { $regex: searchData, $options: "i" } }, // Search in offerLetter's personal information
+            { "gic.personalDetails.fullName": { $regex: searchData, $options: "i" } }, // Search in gic's personal details
+            { "preferences.course": { $regex: searchData, $options: "i" } }, // Search in preferences
             // Add more fields to search dynamically as needed
         ];
     }
@@ -724,31 +721,9 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
     // Total count of applications (without pagination) for the given filters
     const totalApplications = await Institution.countDocuments(query);
 
-    // Map through the applications to return only offerLetter or gic if they exist
+    // Map through the applications to return the necessary data
     const result = applications.map(application => {
-        // Only return offerLetter or gic
-        if (application.offerLetter) {
-            return {
-                ...application.toObject(),
-                offerLetter: application.offerLetter,
-                gic: undefined // Remove gic if offerLetter is present
-            };
-        }
-
-        if (application.gic) {
-            return {
-                ...application.toObject(),
-                offerLetter: undefined, // Remove offerLetter if gic is present
-                gic: application.gic
-            };
-        }
-
-        // If neither offerLetter nor gic is found, return the whole application
-        return {
-            ...application.toObject(),
-            offerLetter: undefined,
-            gic: undefined
-        };
+        return application.toObject(); // Return the whole application object
     });
 
     // Return the paginated applications and total count
@@ -759,6 +734,7 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
         applications: result
     }, "Applications fetched successfully"));
 });
+
 
 
 

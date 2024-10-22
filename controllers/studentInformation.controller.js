@@ -129,69 +129,77 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
   const payload = req.body;
   const { formId } = req.params;
 
+  // Log the formId for debugging
+  console.log('Form ID:', formId);
+
+  // Check if formId is provided for edit operation
+  const isEdit = req.query.edit !== undefined;
+
   // Validate the payload against the Zod schema
   const validation = studentResidenceAndMailingAddressSchema.safeParse(payload);
   if (!validation.success) {
-    return res
-      .status(400)
-      .json(new ApiResponse(400, {}, validation.error.errors[0].message));
+      return res
+          .status(400)
+          .json(new ApiResponse(400, {}, validation.error.errors[0].message));
   }
-   
-  const {edit} = req.query;
-   let updateData;
-  if(edit){
-    updateData = {
+
+  // Prepare update or insert data
+  const updateData = {
       residenceAddress: {
-        address: payload.residenceAddress?.address,
-        country: payload.residenceAddress?.country,
-        state: payload.residenceAddress?.state,
-        city: payload.residenceAddress?.city,
-        zipcode: payload.residenceAddress?.zipcode,
+          address: payload.residenceAddress?.address,
+          country: payload.residenceAddress?.country,
+          state: payload.residenceAddress?.state,
+          city: payload.residenceAddress?.city,
+          zipcode: payload.residenceAddress?.zipcode,
       },
       mailingAddress: {
-        address: payload.mailingAddress?.address,
-        country: payload.mailingAddress?.country,
-        state: payload.mailingAddress?.state,
-        city: payload.mailingAddress?.city,
-        zipcode: payload.mailingAddress?.zipcode,
+          address: payload.mailingAddress?.address,
+          country: payload.mailingAddress?.country,
+          state: payload.mailingAddress?.state,
+          city: payload.mailingAddress?.city,
+          zipcode: payload.mailingAddress?.zipcode,
       },
-    };
-  } else{
-    updateData = {
-    residenceAddress: {
-      address: payload.residenceAddress?.address,
-      country: payload.residenceAddress?.country,
-      state: payload.residenceAddress?.state,
-      city: payload.residenceAddress?.city,
-      zipcode: payload.residenceAddress?.zipcode,
-    },
-    mailingAddress: {
-      address: payload.mailingAddress?.address,
-      country: payload.mailingAddress?.country,
-      state: payload.mailingAddress?.state,
-      city: payload.mailingAddress?.city,
-      zipcode: payload.mailingAddress?.zipcode,
-    },
-    pageCount: 2,
   };
-}
 
-  // Update the StudentInformation document
-  const updatedStudentInfo = await StudentInformation.findOneAndUpdate(
-    { _id: formId },
-    { $set: updateData },
-    { new: true }
-  );
+  if (isEdit) {
+      // Update the StudentInformation document if in edit mode
+      const updatedStudentInfo = await StudentInformation.findOneAndUpdate(
+          { _id: formId },
+          { $set: updateData },
+          { new: true }
+      );
 
-  // Check if the document was found and updated
-  if (!updatedStudentInfo) {
-    return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+      // Check if the document was found and updated
+      if (!updatedStudentInfo) {
+          return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+      }
+
+      return res
+          .status(200)
+          .json(new ApiResponse(200, updatedStudentInfo, "Data updated successfully"));
+  } else {
+      // Create a new StudentInformation document if not in edit mode
+      const newStudentInfo = new StudentInformation({
+          ...updateData,
+          studentId: payload.studentId, // Ensure this is provided in payload
+          agentId: payload.agentId, // Ensure this is provided in payload
+          pageCount: 2, // Set initial pageCount
+          pageStatus: {
+              status: "registering", // Default status
+              message: "" // Default message
+          }
+      });
+
+      // Save the new student information
+      const savedStudentInfo = await newStudentInfo.save();
+
+      return res
+          .status(201)
+          .json(new ApiResponse(201, savedStudentInfo, "Data saved successfully"));
   }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, updatedStudentInfo, "Data saved successfully"));
 });
+
+
 
 const studentPreference = asyncHandler(async (req, res) => {
   const payload = req.body;
