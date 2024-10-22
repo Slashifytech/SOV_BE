@@ -11,64 +11,43 @@ export const getTotalStudentCount = asyncHandler(async (req, res) => {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view student information"));
     }
   
-    // Optional year filter from query parameters
-    const { year } = req.query;
+    // Calculate the date 7 days ago from today
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-    let dateFilter = {};
-    let dateRangeMessage = "in the last 7 days"; // Default message
+    // Calculate the date range 7 days before the last 7 days (for the previous week's count)
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-    if (year) {
-      // If year is provided, set date range for that year (start of the year to end of the year)
-      const startOfYear = new Date(`${year}-01-01T00:00:00Z`);
-      const endOfYear = new Date(`${year}-12-31T23:59:59Z`);
-      dateFilter.createdAt = { $gte: startOfYear, $lte: endOfYear };
-      dateRangeMessage = `in the year ${year}`;
-    } else {
-      // Calculate the date 7 days ago if no year is provided
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      dateFilter.createdAt = { $gte: sevenDaysAgo };
+    // Count student records for the last 7 days
+    const insertedRecords = await StudentInformation.countDocuments({
+      agentId: req.user.id,
+      createdAt: { $gte: sevenDaysAgo }
+    });
   
-      // Calculate the date range 7 days before the last 7 days (for previous count)
-      const fourteenDaysAgo = new Date();
-      fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Count student records for the previous 7 days (from 14 days ago to 7 days ago)
+    const previousRecordCount = await StudentInformation.countDocuments({
+      agentId: req.user.id,
+      createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }
+    });
   
-      // Count student records before the last 7 days
-      const previousRecordCount = await StudentInformation.countDocuments({
-        agentId: req.user.id,
-        createdAt: { $lt: sevenDaysAgo }
-      });
+    // Calculate the percentage increase relative to the previous period
+    const percentageIncrease = previousRecordCount > 0
+      ? (((insertedRecords - previousRecordCount) / previousRecordCount) * 100).toFixed(2)
+      : (insertedRecords > 0 ? 100 : 0); // If no previous records, it's 100% increase if new records exist
   
-      // Get the count of new records added in the last 7 days
-      const insertedRecords = await StudentInformation.countDocuments({
-        agentId: req.user.id,
-        ...dateFilter
-      });
-  
-      // Calculate the percentage increase relative to the previous period
-      const percentageIncrease = previousRecordCount > 0
-        ? (((insertedRecords - previousRecordCount) / previousRecordCount) * 100).toFixed(2)
-        : (insertedRecords > 0 ? 100 : 0); // If there were no previous records, it's a 100% increase if new records exist
-  
-      return res.status(200).json(new ApiResponse(200, {
-        previousRecordCount,
-        insertedRecords,
-        percentageIncrease
-      }, `Student record count ${dateRangeMessage} fetched successfully`));
-    }
-  
-    // Get the total student records for the agent
+    // Count the total student records for the agent from the beginning to the current date
     const totalRecords = await StudentInformation.countDocuments({
       agentId: req.user.id
     });
   
-    // Return the total count and a default 0% increase for the year filter
+    // Return only total student count and percentage increase
     return res.status(200).json(new ApiResponse(200, {
       totalRecords,
-      insertedRecords: 0,
-      percentageIncrease: 0
-    }, `Total student records ${dateRangeMessage} fetched successfully`));
+      percentageIncrease
+    }, "Total student count and percentage increase fetched successfully"));
   });
+  
 
 
   export const getTotalApplicationCount = asyncHandler(async (req, res) => {
