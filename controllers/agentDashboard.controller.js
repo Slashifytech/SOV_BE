@@ -128,7 +128,7 @@ export const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Calculate the date range 7 days before the last 7 days (for previous period count)
+    // Calculate the date range for 14 days ago
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -136,8 +136,14 @@ export const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     const totalUnderReview = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'underreview' },
-            { 'gic.status': 'underreview' }
+            { 
+                'offerLetter.status': 'underreview',
+                'offerLetter.personalInformation': { $exists: true } // Check if offerLetter has data
+            },
+            { 
+                'gic.status': 'underreview',
+                'gic.personalDetails': { $exists: true } // Check if gic has data
+            }
         ]
     });
 
@@ -145,8 +151,14 @@ export const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     const recentUnderReview = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'underreview' },
-            { 'gic.status': 'underreview' }
+            { 
+                'offerLetter.status': 'underreview',
+                'offerLetter.personalInformation': { $exists: true } // Check if offerLetter has data
+            },
+            { 
+                'gic.status': 'underreview',
+                'gic.personalDetails': { $exists: true } // Check if gic has data
+            }
         ],
         createdAt: { $gte: sevenDaysAgo }
     });
@@ -155,8 +167,14 @@ export const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     const previousUnderReview = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'underreview' },
-            { 'gic.status': 'underreview' }
+            { 
+                'offerLetter.status': 'underreview',
+                'offerLetter.personalInformation': { $exists: true } // Check if offerLetter has data
+            },
+            { 
+                'gic.status': 'underreview',
+                'gic.personalDetails': { $exists: true } // Check if gic has data
+            }
         ],
         createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }
     });
@@ -169,9 +187,10 @@ export const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     // Return the total "under review" count and the percentage increase
     return res.status(200).json(new ApiResponse(200, {
         totalUnderReview,
-        underReviewPercentage,
+        underReviewPercentage
     }, `Total under review applications and percentage increase fetched successfully`));
 });
+
 
 
 

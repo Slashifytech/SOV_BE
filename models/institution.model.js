@@ -147,7 +147,7 @@ const InstitutionSchema = new Schema({
         status: {
             type: String,
             enum: ['underreview', 'completed', 'rejected', 'pending', 'approved'],  // Valid status values
-             default: 'underreview'
+             default: 'pending'
         },
        
         message: { type: String }  // Optional message field
@@ -162,7 +162,7 @@ const InstitutionSchema = new Schema({
         status: {
             type: String,
             enum: ['underreview', 'completed', 'rejected', 'pending', 'approved'],  // Valid status values
-            default: 'underreview'
+            default: 'pending'
         },
         message: { type: String }  // Optional message field
     },
