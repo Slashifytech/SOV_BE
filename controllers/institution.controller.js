@@ -487,7 +487,7 @@ const editPTEScore = asyncHandler(async (req, res) => {
     }
 
     // Validate the structure of the PTE object
-    const { listening, reading, writing, speaking, overallBands } = ptes;
+    const { listening, reading, writing, speaking, overallBand } = ptes;
     // if (
     //     typeof listening !== 'number' || 
     //     typeof reading !== 'number' || 
@@ -504,7 +504,7 @@ const editPTEScore = asyncHandler(async (req, res) => {
         reading,
         writing,
         speaking,
-        overallBands,
+        overallBand,
     };
 
     // Save the updated document to the database
@@ -525,7 +525,7 @@ const editTOEFLScore = asyncHandler(async (req, res) => {
     }
 
     // Validate the structure of the TOEFL object
-    const { listening, reading, writing, speaking, overallBands } = toefl;
+    const { listening, reading, writing, speaking, overallBand } = toefl;
     // if (
     //     typeof listening !== 'number' || 
     //     typeof reading !== 'number' || 
@@ -542,7 +542,7 @@ const editTOEFLScore = asyncHandler(async (req, res) => {
         reading,
         writing,
         speaking,
-        overallBands,
+        overallBand,
     };
 
     // Save the updated document to the database
