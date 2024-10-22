@@ -441,12 +441,7 @@ const editEducationDetails = asyncHandler(async (req, res) => {
 
 const editPreferences = asyncHandler(async (req, res) => {
     const { applicationId } = req.params;
-    const { section, preferences } = req.body;
-
-    // Ensure valid section ('offerLetter' in this case)
-    if (section !== 'offerLetter') {
-        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating preferences.'));
-    }
+    const { preferences } = req.body;
 
     // Find the Institution by applicationId
     const institution = await Institution.findOne({ _id: applicationId });
@@ -454,7 +449,20 @@ const editPreferences = asyncHandler(async (req, res) => {
         return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
     }
 
-    // Update preferences if section is 'offerLetter'
+    // Check if there's an existing offer with the same preferences for a different institution
+    const existingOffer = await Institution.findOne({
+        studentInformationId: institution.offerLetter.personalInformation.studentInformationId,
+        'offerLetter.preferences.course': preferences.course,
+        'offerLetter.preferences.institution': preferences.institution,
+        'offerLetter.preferences.country': preferences.country,
+        _id: { $ne: applicationId }, // Ensure to exclude the current document
+    });
+
+    if (existingOffer) {
+        return res.status(409).json(new ApiResponse(409, {}, 'An offer with the same course, institution, and country preferences already exists.'));
+    }
+
+    // Update preferences in the offerLetter section
     institution.offerLetter.preferences = preferences;
 
     // Save the updated document to the database
@@ -463,6 +471,7 @@ const editPreferences = asyncHandler(async (req, res) => {
     // Send success response
     return res.status(200).json(new ApiResponse(200, data, 'Preferences updated successfully.'));
 });
+
 
 const editIELTSScore = asyncHandler(async (req, res) => {
     const { applicationId } = req.params;
