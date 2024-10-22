@@ -61,7 +61,8 @@ const registerOfferLetter = asyncHandler(async (req, res) => {
     const existingOffer = await Institution.findOne({
         studentInformationId: payload.offerLetter.studentInformationId,
         'offerLetter.preferences.course': payload.offerLetter.preferences.course,
-        'offerLetter.preferences.institution': payload.offerLetter.preferences.institution
+        'offerLetter.preferences.institution': payload.offerLetter.preferences.institution,
+        'offerLetter.preferences.country': payload.offerLetter.preferences.country
     });
 
     if (existingOffer) {
