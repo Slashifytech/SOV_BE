@@ -484,22 +484,35 @@ const editIELTSScore = asyncHandler(async (req, res) => {
 
 
 const editPTEScore = asyncHandler(async (req, res) => {
-    const { applicationId } = req.params;
-    const { section, ptes } = req.body;
-
-    // Ensure valid section ('offerLetter' in this case)
-    if (section !== 'offerLetter') {
-        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating PTE score.'));
-    }
+    const { applicationId } = req.params; // Get application ID from request parameters
+    const { ptes } = req.body; // Get PTE scores from request body
 
     // Find the Institution by applicationId
-    const institution = await Institution.findOne({ _id: applicationId });
+    const institution = await Institution.findById(applicationId);
     if (!institution) {
         return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
     }
 
-    // Update PTE score if section is 'offerLetter'
-    institution.offerLetter.ptes = ptes;
+    // Validate the structure of the PTE object
+    const { listening, reading, writing, speaking, overallBands } = ptes;
+    if (
+        typeof listening !== 'number' || 
+        typeof reading !== 'number' || 
+        typeof writing !== 'number' || 
+        typeof speaking !== 'number' || 
+        typeof overallBands !== 'number'
+    ) {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid PTE score format. All scores must be numbers.'));
+    }
+
+    // Update PTE score in the offerLetter section
+    institution.offerLetter.ptes = {
+        listening,
+        reading,
+        writing,
+        speaking,
+        overallBands,
+    };
 
     // Save the updated document to the database
     const data = await institution.save();
@@ -509,28 +522,45 @@ const editPTEScore = asyncHandler(async (req, res) => {
 });
 
 const editTOEFLScore = asyncHandler(async (req, res) => {
-    const { applicationId } = req.params;
-    const { section, toefl } = req.body;
+    const { applicationId } = req.params; // Get the ID from the request parameters
+    const { toefl } = req.body;
 
-    // Ensure valid section ('offerLetter' in this case)
-    if (section !== 'offerLetter') {
-        return res.status(400).json(new ApiResponse(400, {}, 'Invalid section. Use "offerLetter" for updating TOEFL score.'));
-    }
-
-    // Find the Institution by applicationId
-    const institution = await Institution.findOne({ _id: applicationId });
+    // Find the Institution by _id
+    const institution = await Institution.findById(applicationId); // Use findById to search by _id
     if (!institution) {
         return res.status(404).json(new ApiResponse(404, {}, 'Institution not found.'));
     }
 
-    // Update TOEFL score if section is 'offerLetter'
-    institution.offerLetter.toefl = toefl;
+    // Validate the structure of the TOEFL object
+    const { listening, reading, writing, speaking, overallBands } = toefl;
+    if (
+        typeof listening !== 'number' || 
+        typeof reading !== 'number' || 
+        typeof writing !== 'number' || 
+        typeof speaking !== 'number' || 
+        typeof overallBands !== 'number'
+    ) {
+        return res.status(400).json(new ApiResponse(400, {}, 'Invalid TOEFL score format. All scores must be numbers.'));
+    }
+
+    // Update TOEFL score in the offerLetter section
+    institution.offerLetter.toefl = {
+        listening,
+        reading,
+        writing,
+        speaking,
+        overallBands,
+    };
 
     // Save the updated document to the database
-    const data = await institution.save();
+    try {
+        const updatedInstitution = await institution.save();
 
-    // Send success response
-    return res.status(200).json(new ApiResponse(200, data, 'TOEFL score updated successfully.'));
+        // Send success response
+        return res.status(200).json(new ApiResponse(200, updatedInstitution, 'TOEFL score updated successfully.'));
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, {}, 'Failed to update TOEFL score. Please try again.'));
+    }
 });
 
 const editCertificate = asyncHandler(async (req, res) => {
