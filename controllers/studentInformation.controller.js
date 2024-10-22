@@ -161,24 +161,33 @@ const studentResidenceAndAddress = asyncHandler(async (req, res) => {
       },
   };
 
-  if (isEdit) {
-      // Update the StudentInformation document if in edit mode
-      const updatedStudentInfo = await StudentInformation.findOneAndUpdate(
-          { _id: formId },
-          { $set: updateData },
-          { new: true }
-      );
+  // Check if a document with the provided formId already exists
+  const existingStudentInfo = await StudentInformation.findById(formId);
 
-      // Check if the document was found and updated
-      if (!updatedStudentInfo) {
-          return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+  if (existingStudentInfo) {
+      // If we're in edit mode, update the existing document
+      if (isEdit || (existingStudentInfo.residenceAddress || existingStudentInfo.mailingAddress)) {
+          const updatedStudentInfo = await StudentInformation.findByIdAndUpdate(
+              formId,
+              { $set: updateData },
+              { new: true }
+          );
+
+          // Check if the document was updated successfully
+          if (!updatedStudentInfo) {
+              return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+          }
+
+          return res
+              .status(200)
+              .json(new ApiResponse(200, updatedStudentInfo, "Data updated successfully"));
+      } else {
+          return res
+              .status(400)
+              .json(new ApiResponse(400, {}, "Residence and Mailing address already exist"));
       }
-
-      return res
-          .status(200)
-          .json(new ApiResponse(200, updatedStudentInfo, "Data updated successfully"));
   } else {
-      // Create a new StudentInformation document if not in edit mode
+      // Create a new StudentInformation document if not in edit mode and no existing record
       const newStudentInfo = new StudentInformation({
           ...updateData,
           studentId: payload.studentId, // Ensure this is provided in payload
