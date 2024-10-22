@@ -388,14 +388,39 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
           { $limit: parseInt(limit) }
         ]
       }
+    },
+    // Flatten the array to return only a single student
+    {
+      $unwind: {
+        path: "$data",
+        preserveNullAndEmptyArrays: true // In case there are no students
+      }
+    },
+    // Group to return a single student along with total records
+    {
+      $group: {
+        _id: null,
+        student: { $first: "$data" },
+        totalRecords: { $first: { $arrayElemAt: ["$totalCount.count", 0] } } // Get total count from totalCount
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        student: {
+          ..."$student",          // Spread the original student object
+          totalRecords: "$totalRecords" // Include totalRecords directly in the student object
+        }
+      }
     }
   ]);
 
-  const totalRecords = allStudents[0]?.totalCount[0]?.count || 0;
-  const students = allStudents[0]?.data || [];
+  // Extract student from the result
+  const { student } = allStudents[0] || { student: null };
 
-  res.status(200).json(new ApiResponse(200, { totalRecords, students }, "Students fetched successfully"));
+  res.status(200).json(new ApiResponse(200, { student }, "Student fetched successfully"));
 });
+
 
 
 
