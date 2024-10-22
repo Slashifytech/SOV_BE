@@ -341,9 +341,9 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
     );
   }
 
-  // Initialize query and matchQuery objects
-  const query = { agentId, pageCount: 3 };
-  const matchQuery = { agentId, pageCount: 3 };
+  // Initialize query and matchQuery objects with agentId, pageCount, and non-deleted students
+  const query = { agentId, pageCount: 3, deleted: false }; 
+  const matchQuery = { agentId, pageCount: 3, deleted: false };
 
   // Dynamic search query construction
   if (searchData) {
@@ -368,7 +368,7 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
 
   // Fetch students with aggregation
   const allStudents = await StudentInformation.aggregate([
-    { $match: matchQuery },
+    { $match: matchQuery }, // Match query for agentId, pageCount, and non-deleted students
     {
       $lookup: {
         from: 'institutions',
@@ -406,6 +406,7 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
 
 
 
+
 const getStudentFormById = asyncHandler(async (req, res) => {
   const { formId } = req.params;
 
@@ -425,6 +426,21 @@ const getStudentFormById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, studentInformation, "Student information retrieved successfully"));
 });
 
+const deleteStudentInformation = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+
+  const studentInfo = await StudentInformation.findById(studentId);
+  if (!studentInfo) {
+      return res.status(404).json(new ApiResponse(404, {}, 'Student information not found.'));
+  }
+
+  studentInfo.deleted = true;
+
+  await studentInfo.save();
+
+  return res.status(200).json(new ApiResponse(200, studentInfo, 'Student information marked as deleted.'));
+});
+
 
 
 export {
@@ -436,5 +452,6 @@ export {
   // getAllStudents,
   updateStudentPersonalInformation,
   getAllAgentStudent,
-  getStudentFormById
+  getStudentFormById,
+  deleteStudentInformation
 };

@@ -207,6 +207,10 @@ const StudentInformationSchema = new Schema(
     },
     stId: {
       type: String
+    },
+    deleted: {
+      type: Boolean,
+      default: false
     }
 
   },
