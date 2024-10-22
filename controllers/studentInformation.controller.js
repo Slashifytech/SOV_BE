@@ -328,9 +328,9 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
 
   // Check if the user role is authorized
   if (req.user.role !== '2') {
-    return res
-      .status(403)
-      .json(new ApiResponse(403, {}, "Unauthorized access: Only agents can fetch student data"));
+    return res.status(403).json(
+      new ApiResponse(403, {}, "Unauthorized access: Only agents can fetch student data")
+    );
   }
 
   // Build the query object dynamically based on the provided filters
@@ -389,27 +389,27 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
         ]
       }
     },
-    // Flatten the array to return only a single student
     {
       $unwind: {
         path: "$data",
-        preserveNullAndEmptyArrays: true // In case there are no students
+        preserveNullAndEmptyArrays: true
       }
     },
-    // Group to return a single student along with total records
     {
       $group: {
         _id: null,
         student: { $first: "$data" },
-        totalRecords: { $first: { $arrayElemAt: ["$totalCount.count", 0] } } // Get total count from totalCount
+        totalRecords: { $first: { $arrayElemAt: ["$totalCount.count", 0] } }
       }
     },
     {
       $project: {
         _id: 0,
         student: {
-          ..."$student",          // Spread the original student object
-          totalRecords: "$totalRecords" // Include totalRecords directly in the student object
+          personalInformation: "$student.personalInformation",
+          stId: "$student.stId",
+          applicationCount: "$student.applicationCount",
+          totalRecords: "$totalRecords"
         }
       }
     }
@@ -420,9 +420,6 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
 
   res.status(200).json(new ApiResponse(200, { student }, "Student fetched successfully"));
 });
-
-
-
 
 
 
