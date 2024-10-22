@@ -10,36 +10,27 @@ import mongoose from 'mongoose';
 async function generateApplicationId() {
     const today = new Date();
   
-    // Format the date components (YYMM)
+    // Format the date components (YYMMDD)
     const year = today.getFullYear().toString().slice(2); // Last 2 digits of the year
     const month = (today.getMonth() + 1).toString().padStart(2, '0'); // Month with leading zero if necessary
+    const day = today.getDate().toString().padStart(2, '0'); // Day with leading zero if necessary
   
-    // Construct the base Application ID (AP-YYMM)
-    const baseId = `AP-${year}${month}`;
+    // Construct the base Application ID (AP-YYMMDD)
+    const baseId = `AP-${year}${month}${day}`;
   
-    // Find the last created application with a matching YYMM prefix (e.g., AP-2410)
-    const lastInstitution = await Institution
-      .findOne({ applicationId: { $regex: `^${baseId}` } })  // Search for IDs starting with AP-YYMM
-      .sort({ applicationId: -1 })  // Sort by descending order to get the last created one
-      .exec();
+    // Count the number of applications created with the same YYMMDD prefix
+    const count = await Institution.countDocuments({ applicationId: { $regex: `^${baseId}` } }).exec();
   
-    let sequenceNumber = 1;  // Default sequence number if no matching document exists
+    // The sequence number is based on the count (0-based index + 1)
+    const sequenceNumber = count + 1;
   
-    if (lastInstitution) {
-      // Extract the sequence number from the last applicationId (e.g., 002 from AP-241002)
-      const lastId = lastInstitution.applicationId;
-      const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the applicationId
+    // Format the sequence number as a three-digit number
+    const sequenceStr = sequenceNumber.toString().padStart(3, '0'); // Ensure it's always 3 digits
   
-      // Increment the sequence number for the new ID
-      sequenceNumber = lastSequence + 1;
-    }
-  
-    // Format the sequence number as a two-digit number
-    const sequenceStr = sequenceNumber.toString().padStart(3, '0'); // Now it's 3 digits
-  
-    // Return the unique Application ID (e.g., AP-241001)
+    // Return the unique Application ID (e.g., AP-241010001)
     return `${baseId}${sequenceStr}`;
-  }
+}
+
   
 
 const registerOfferLetter = asyncHandler(async (req, res) => {

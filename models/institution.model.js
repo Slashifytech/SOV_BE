@@ -25,16 +25,16 @@ const EducationDetailsSchema = new Schema({
         required: true 
     },
     markSheet10: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String,  
     },
     markSheet12: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String, 
     },
     markSheetUnderGraduate: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String,  
     },
     markSheetPostGraduate: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String,  
     },
 });
 
