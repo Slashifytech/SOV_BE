@@ -249,5 +249,52 @@ export const getTotalCompletedCount = asyncHandler(async (req, res) => {
     }, `Total completed applications and percentage increase fetched successfully`));
 });
 
+export const getTotalApplicationOverview = asyncHandler(async(req, res)=>{
+
+if (req.user.role !== '2') {
+        return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view this information"));
+    }
+
+    const { type, year, month } = req.query;
+
+    // Construct filter for the query
+    const match = {
+        userId: req.user.id,
+        // Filtering by application type
+        ...(type && type !== 'all' ? { [`${type}.status`]: { $exists: true } } : {}),
+    };
+
+    // If year and month are provided, set date range
+    if (year && month) {
+        const startDate = new Date(`${year}-${month}-01T00:00:00Z`);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 1); // Move to the first day of the next month
+
+        match.createdAt = { $gte: startDate, $lt: endDate };
+    }
+
+    // Count the total number of applications
+    const totalApplications = await Institution.countDocuments(match);
+
+    // Count offer letters
+    const offerLetterCount = await Institution.countDocuments({
+        ...match,
+        'offerLetter.status': { $exists: true }
+    });
+
+    // Count GIC applications
+    const gicCount = await Institution.countDocuments({
+        ...match,
+        'gic.status': { $exists: true }
+    });
+
+    // Return the counts in the response
+    return res.status(200).json(new ApiResponse(200, {
+        totalApplications,
+        offerLetterCount,
+        gicCount
+    }, 'Application counts fetched successfully'));
+});
+
   
 
