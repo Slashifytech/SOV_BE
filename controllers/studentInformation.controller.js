@@ -323,7 +323,7 @@ const updateStudentPersonalInformation = asyncHandler(async (req, res) => {
 });
 
 const getAllAgentStudent = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, searchData } = req.query;
+  const { page = 1, limit = 10, searchData } = req.query; // Extract pagination and search parameters
   const agentId = req.user.id;
 
   // Check if the user role is authorized
@@ -333,38 +333,32 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
     );
   }
 
-  // Build the query object dynamically based on the provided filters
+  // Initialize query and matchQuery objects
+  const query = { agentId, pageCount: 3 };
   const matchQuery = { agentId, pageCount: 3 };
 
-  // If searchData is provided, use it to search across multiple fields
+  // Dynamic search query construction
   if (searchData) {
-    matchQuery.$or = [
-      { 'personalInformation.email': { $regex: searchData, $options: 'i' } },
-      { 'stId': { $regex: searchData, $options: 'i' } },
-      { 'personalInformation.firstName': { $regex: searchData, $options: 'i' } },
-      { 'personalInformation.lastName': { $regex: searchData, $options: 'i' } },
-      { 'personalInformation.phone.phone': { $regex: searchData, $options: 'i' } },
+    const regex = new RegExp(searchData, 'i');
+    query.$or = [
+      { 'personalInformation.email': regex },
+      { 'stId': regex },
+      { 'personalInformation.firstName': regex },
+      { 'personalInformation.lastName': regex },
+      { 'personalInformation.phone.phone': regex }
     ];
   }
 
-  // If specific filters are provided, add them to the match query
-  if (req.query.email) {
-    matchQuery['personalInformation.email'] = req.query.email;
-  }
-  if (req.query.stId) {
-    matchQuery.stId = req.query.stId;
-  }
-  if (req.query.firstName) {
-    matchQuery['personalInformation.firstName'] = req.query.firstName;
-  }
-  if (req.query.lastName) {
-    matchQuery['personalInformation.lastName'] = req.query.lastName;
-  }
-  if (req.query.phone) {
-    matchQuery['personalInformation.phone.phone'] = req.query.phone;
-  }
+  // Add specific filters if provided
+  const filters = ['email', 'stId', 'firstName', 'lastName', 'phone'];
+  filters.forEach(filter => {
+    if (req.query[filter]) {
+      query[`personalInformation.${filter}`] = req.query[filter];
+      matchQuery[`personalInformation.${filter}`] = req.query[filter];
+    }
+  });
 
-  // Fetch all students where agentId matches req.user.id and apply filters with pagination
+  // Fetch students with aggregation
   const allStudents = await StudentInformation.aggregate([
     { $match: matchQuery },
     {
@@ -388,37 +382,18 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
           { $limit: parseInt(limit) }
         ]
       }
-    },
-    {
-      $unwind: {
-        path: "$data",
-        preserveNullAndEmptyArrays: true
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        student: { $first: "$data" },
-        totalRecords: { $first: { $arrayElemAt: ["$totalCount.count", 0] } }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        student: {
-          personalInformation: "$student.personalInformation",
-          stId: "$student.stId",
-          applicationCount: "$student.applicationCount",
-          totalRecords: "$totalRecords"
-        }
-      }
     }
   ]);
 
-  // Extract student from the result
-  const { student } = allStudents[0] || { student: null };
+  const totalRecords = allStudents[0]?.totalCount[0]?.count || 0;
+  const students = allStudents[0]?.data || [];
 
-  res.status(200).json(new ApiResponse(200, { student }, "Student fetched successfully"));
+  // Check if any students exist for this agent
+  if (!students.length) {
+    return res.status(404).json(new ApiResponse(404, {}, "No students found for this agent"));
+  }
+
+  res.status(200).json(new ApiResponse(200, { totalRecords, students }, "Students fetched successfully"));
 });
 
 
