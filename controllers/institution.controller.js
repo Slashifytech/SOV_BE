@@ -740,10 +740,11 @@ const getStudentAllApplications = asyncHandler(async (req, res) => {
 
 
 
-const reSubmitApplication = asyncHandler(async(req, res)=>{
-const { id } = req.params;  // Get _id from the URL parameter
-    const { section } = req.query;  // Get section (offerLetter or gic) and status from query
-     const status = 'underreview';
+const reSubmitApplication = asyncHandler(async (req, res) => {
+    const { id } = req.params;  // Get _id from the URL parameter
+    const { section } = req.query;  // Get section (offerLetter or gic) from query
+    const status = 'underreview';
+
     // Validate the input
     if (!section || !['offerLetter', 'gic'].includes(section)) {
         return res.status(400).json({
@@ -751,29 +752,38 @@ const { id } = req.params;  // Get _id from the URL parameter
         });
     }
 
-    
-
     // Dynamic update based on the section
     const updateField = `${section}.status`;
 
-    // Find the Institution by ID and update the relevant status
-    const institution = await Institution.findOneAndUpdate(
-        { _id: id },  // Find institution by ID
-        { $set: { [updateField]: status } },  // Dynamically set the status for the given section
-        { new: true }  // Return the updated document
-    );
+    // Find the Institution by ID
+    const institution = await Institution.findOne({ _id: id });
 
+    // Check if institution exists
     if (!institution) {
         return res.status(404).json({
             message: 'Institution not found.'
         });
     }
 
+    // Check the current status of the specified section
+    const currentStatus = institution[section]?.status;
+    if (currentStatus !== 'rejected') {
+        return res.status(400).json({
+            message: `Cannot resubmit. Current status is '${currentStatus}'. Only 'rejected' status can be resubmitted.`
+        });
+    }
+
+    // Update the status to 'underreview'
+    institution[section].status = status;
+
+    // Save the updated institution
+    const updatedInstitution = await institution.save();
+
     res.status(200).json({
-        message: `${section} status updated successfully`,
-        updatedInstitution: institution
+        message: `${section} resubmitted successfully`,
+        updatedInstitution
     });
-})
+});
 
 
 
