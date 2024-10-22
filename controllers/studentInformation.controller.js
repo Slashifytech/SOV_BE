@@ -341,7 +341,7 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
     );
   }
 
-  // Initialize query and matchQuery objects with agentId, pageCount, and non-deleted students
+  // Initialize query and matchQuery objects with agentId and non-deleted students
   const query = { agentId, deleted: false }; 
   const matchQuery = { agentId, deleted: false };
 
@@ -368,7 +368,7 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
 
   // Fetch students with aggregation
   const allStudents = await StudentInformation.aggregate([
-    { $match: matchQuery }, // Match query for agentId, pageCount, and non-deleted students
+    { $match: matchQuery }, // Match query for agentId and non-deleted students
     {
       $lookup: {
         from: 'institutions',
@@ -396,13 +396,27 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
   const totalRecords = allStudents[0]?.totalCount[0]?.count || 0;
   const students = allStudents[0]?.data || [];
 
+  // Pagination logic
+  const totalPages = Math.ceil(totalRecords / limit);
+  const currentPage = parseInt(page);
+  const prevPage = currentPage > 1 ? currentPage - 1 : null;
+  const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+
   // Check if any students exist for this agent
   if (!students.length) {
     return res.status(404).json(new ApiResponse(404, {}, "No students found for this agent"));
   }
 
-  res.status(200).json(new ApiResponse(200, { totalRecords, students }, "Students fetched successfully"));
+  res.status(200).json(new ApiResponse(200, {
+    totalRecords,
+    totalPages,
+    currentPage,
+    prevPage,
+    nextPage,
+    students
+  }, "Students fetched successfully"));
 });
+
 
 
 
