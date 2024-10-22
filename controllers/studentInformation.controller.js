@@ -342,8 +342,8 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
   }
 
   // Initialize query and matchQuery objects with agentId, pageCount, and non-deleted students
-  const query = { agentId, pageCount: 3, deleted: false }; 
-  const matchQuery = { agentId, pageCount: 3, deleted: false };
+  const query = { agentId, deleted: false }; 
+  const matchQuery = { agentId, deleted: false };
 
   // Dynamic search query construction
   if (searchData) {
