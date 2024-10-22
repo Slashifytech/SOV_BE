@@ -334,7 +334,7 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
   }
 
   // Build the query object dynamically based on the provided filters
-  const query = { agentId };
+  const query = { agentId, pageCount: 3 }; // Add pageCount filter
 
   // If searchData is provided, use it to search across multiple fields
   if (searchData) {
