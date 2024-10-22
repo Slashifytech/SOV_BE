@@ -401,6 +401,8 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
   const currentPage = parseInt(page);
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
 
   // Check if any students exist for this agent
   if (!students.length) {
@@ -413,6 +415,8 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
     currentPage,
     prevPage,
     nextPage,
+    hasPreviousPage,
+    hasNextPage,
     students
   }, "Students fetched successfully"));
 });
