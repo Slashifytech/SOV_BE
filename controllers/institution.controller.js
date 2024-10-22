@@ -58,7 +58,8 @@ const registerOfferLetter = asyncHandler(async (req, res) => {
     // Generate unique application ID
     const applicationId = await generateApplicationId();
 
-    // Create a new offer letter document
+    // Create a new offer letter 
+    payload.offerLetter.preferences.offerLetterPrice = "$50";
     const newOffer = await Institution.create({
         offerLetter: payload.offerLetter,
         studentInformationId: payload.offerLetter.studentInformationId,
