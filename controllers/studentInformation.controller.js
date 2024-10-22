@@ -323,22 +323,22 @@ const updateStudentPersonalInformation = asyncHandler(async (req, res) => {
 });
 
 const getAllAgentStudent = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, searchData } = req.query; // Extract searchData and pagination parameters
+  const { page = 1, limit = 10, searchData } = req.query;
   const agentId = req.user.id;
 
   // Check if the user role is authorized
   if (req.user.role !== '2') {
     return res
-      .status(403) // 403 Forbidden for unauthorized access
+      .status(403)
       .json(new ApiResponse(403, {}, "Unauthorized access: Only agents can fetch student data"));
   }
 
   // Build the query object dynamically based on the provided filters
-  const query = { agentId, pageCount: 3 }; // Add pageCount filter
+  const matchQuery = { agentId, pageCount: 3 };
 
   // If searchData is provided, use it to search across multiple fields
   if (searchData) {
-    query.$or = [
+    matchQuery.$or = [
       { 'personalInformation.email': { $regex: searchData, $options: 'i' } },
       { 'stId': { $regex: searchData, $options: 'i' } },
       { 'personalInformation.firstName': { $regex: searchData, $options: 'i' } },
@@ -347,52 +347,57 @@ const getAllAgentStudent = asyncHandler(async (req, res) => {
     ];
   }
 
-  // If specific filters are provided, add them to the query
+  // If specific filters are provided, add them to the match query
   if (req.query.email) {
-    query['personalInformation.email'] = req.query.email;
+    matchQuery['personalInformation.email'] = req.query.email;
   }
   if (req.query.stId) {
-    query.stId = req.query.stId;
+    matchQuery.stId = req.query.stId;
   }
   if (req.query.firstName) {
-    query['personalInformation.firstName'] = req.query.firstName;
+    matchQuery['personalInformation.firstName'] = req.query.firstName;
   }
   if (req.query.lastName) {
-    query['personalInformation.lastName'] = req.query.lastName;
+    matchQuery['personalInformation.lastName'] = req.query.lastName;
   }
   if (req.query.phone) {
-    query['personalInformation.phone.phone'] = req.query.phone; // Match phone number
+    matchQuery['personalInformation.phone.phone'] = req.query.phone;
   }
 
   // Fetch all students where agentId matches req.user.id and apply filters with pagination
-  const allStudents = await StudentInformation.find(query)
-    .select("-__v") // Exclude the version field
-    .limit(parseInt(limit)) // Limit the number of results per page
-    .skip((parseInt(page) - 1) * parseInt(limit)); // Skip results for pagination
+  const allStudents = await StudentInformation.aggregate([
+    { $match: matchQuery },
+    {
+      $lookup: {
+        from: 'institutions',
+        localField: '_id',
+        foreignField: 'studentInformationId',
+        as: 'applications'
+      }
+    },
+    {
+      $addFields: {
+        applicationCount: { $size: "$applications" }
+      }
+    },
+    {
+      $facet: {
+        totalCount: [{ $count: "count" }],
+        data: [
+          { $skip: (page - 1) * limit },
+          { $limit: parseInt(limit) }
+        ]
+      }
+    }
+  ]);
 
-  // Get the total count of students matching the query
-  const totalStudents = await StudentInformation.countDocuments(query);
+  const totalRecords = allStudents[0]?.totalCount[0]?.count || 0;
+  const students = allStudents[0]?.data || [];
 
-  // Check if any students exist for this agent
-  if (!allStudents.length) {
-    return res
-      .status(404)
-      .json(new ApiResponse(404, {}, "No students found for this agent"));
-  }
-
-  // Prepare pagination data
-  const pagination = {
-    currentPage: parseInt(page),
-    totalPages: Math.ceil(totalStudents / limit),
-    pageSize: parseInt(limit),
-    totalItems: totalStudents,
-  };
-
-  // Respond with paginated results
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { students: allStudents, pagination }, "Students fetched successfully"));
+  res.status(200).json(new ApiResponse(200, { totalRecords, students }, "Students fetched successfully"));
 });
+
+
 
 
 
