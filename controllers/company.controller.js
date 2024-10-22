@@ -274,9 +274,6 @@ const registerReferences = asyncHandler(async (req, res) => {
     return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
   }
 
-  // Debugging: Log the user ID
- 
-
   // Find the company associated with the agentId (try using _id as well)
   let company = await Company.findOne({ agentId: req.user.id });
   if (!company) {
@@ -284,23 +281,41 @@ const registerReferences = asyncHandler(async (req, res) => {
     company = await Company.findById(req.user.id);  // Try using MongoDB _id as a fallback
   }
 
-  
-
   if (!company) {
     return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
   }
 
-  const temp = agentRegistrationComplete(company.accountDetails.primaryContactPerson.name);
-  await sendEmailVerification(company.accountDetails.founderOrCeo.email,"Registration Successful Awaiting Admin Approval", temp);
 
-  // Update the references for the company
-  company.agId = await generateAgentId();
-  company.references = result.data;
-  
-  company.pageStatus.status = 'notapproved';
-  const {edit} = req.query;
-  if(!edit){
-    company.pageCount = 6;
+  // Check if edit is present in the query
+  const { edit } = req.query;
+
+  if (edit) {
+    // If edit is true, update the references without sending the email
+    company.references = payload;  // Assuming the whole reference array is being replaced
+  } else {
+    // Insert new references
+    company.references = result.data;  // Insert the validated references
+    company.pageStatus.status = 'notapproved';  // Set status to notapproved
+    company.agId = await generateAgentId();  // Generate and assign a new agentId
+    company.pageCount = 6;  // Set the page count to 6 (this is based on your logic)
+    
+    // Ensure primaryContact is present before accessing it
+  if (!company.primaryContact) {
+    return res.status(400).json(new ApiResponse(400, {}, "Primary contact details are missing in company profile"));
+  }
+
+    // Only send the email if not editing
+    const temp = agentRegistrationComplete(company.primaryContact.firstName);
+
+    if (company.primaryContact.emailUsername) {
+      await sendEmailVerification(
+        company.primaryContact.emailUsername,
+        "Registration Successful Awaiting Admin Approval",
+        temp
+      );
+    } else {
+      return res.status(400).json(new ApiResponse(400, {}, "Founder or CEO's email is missing"));
+    }
   }
 
   // Save the updated company details
@@ -311,6 +326,8 @@ const registerReferences = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, updatedCompany, "References updated successfully"));
 });
+
+
 
   const getCompanyData = asyncHandler(async (req, res) => {
     // Ensure the user role is 'AGENT'
