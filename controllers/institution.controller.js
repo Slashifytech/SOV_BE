@@ -6,40 +6,41 @@ import { CourseFeeApplicationSchema, GICSchema, OfferLetterSchema } from "../val
 import mongoose from 'mongoose';
 
 // Function to generate unique Application ID
+
 async function generateApplicationId() {
     const today = new Date();
   
-    // Format the date components (DDMMYY)
-    const day = today.getDate().toString().padStart(2, '0');
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const year = today.getFullYear().toString().slice(2);
+    // Format the date components (YYMM)
+    const year = today.getFullYear().toString().slice(2); // Last 2 digits of the year
+    const month = (today.getMonth() + 1).toString().padStart(2, '0'); // Month with leading zero if necessary
   
-    // Construct the base Application ID without the sequence number
-    const baseId = `AP-${year}${month}${day}`;
+    // Construct the base Application ID (AP-YYMM)
+    const baseId = `AP-${year}${month}`;
   
-    // Find the last created application with a matching date prefix (e.g., AP-240926)
+    // Find the last created application with a matching YYMM prefix (e.g., AP-2410)
     const lastInstitution = await Institution
-      .findOne({ applicationId: { $regex: `^${baseId}` } })  // Search for existing IDs with the same base
+      .findOne({ applicationId: { $regex: `^${baseId}` } })  // Search for IDs starting with AP-YYMM
       .sort({ applicationId: -1 })  // Sort by descending order to get the last created one
       .exec();
   
-    let sequenceNumber = 1;  // Default sequence number
+    let sequenceNumber = 1;  // Default sequence number if no matching document exists
   
     if (lastInstitution) {
-      // Extract the last two digits (sequence number) from the last applicationId
+      // Extract the sequence number from the last applicationId (e.g., 002 from AP-241002)
       const lastId = lastInstitution.applicationId;
       const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the applicationId
-      
+  
       // Increment the sequence number for the new ID
       sequenceNumber = lastSequence + 1;
     }
   
     // Format the sequence number as a two-digit number
-    const sequenceStr = sequenceNumber.toString().padStart(2, '0');
+    const sequenceStr = sequenceNumber.toString().padStart(3, '0'); // Now it's 3 digits
   
-    // Return the unique Application ID (e.g., AP-24092601)
+    // Return the unique Application ID (e.g., AP-241001)
     return `${baseId}${sequenceStr}`;
   }
+  
 
 const registerOfferLetter = asyncHandler(async (req, res) => {
     const { body: payload, user } = req;
