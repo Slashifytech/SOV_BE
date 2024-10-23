@@ -24,4 +24,18 @@ const changePasswordSchema = z.object({
   });
   
 
-export {loginSchema, changePasswordSchema, changeEmailSchema };
+ const editDataSchema = z.object({
+  profilePicture: z.string().optional(), // Optional profile picture
+  firstName: z.string().min(1, { message: "First name is required" }), // Required first name
+  lastName: z.string().min(1, { message: "Last name is required" }),  // Required last name
+  dob: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+    .optional(), // Optional date of birth, validated as string in ISO format
+  phone: z
+    .string()
+    .min(1, { message: "Phone number is required" }),  // Required phone number
+});
+
+
+export {loginSchema, changePasswordSchema, changeEmailSchema, editDataSchema };
