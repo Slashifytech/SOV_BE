@@ -190,13 +190,14 @@ export const getAllApplications = asyncHandler(async (req, res) => {
       };
 
     //   this findAgent findStudent retun null why ? please fix this 
-      const findAgent = await Company.findOne({ agentId: userId.toString() });
-      const findStudent = await StudentInformation.findOne({
-        studentId: userId.toString(),
-      });
+    
+      const findAgent = await Company.findOne({'agentId': '66eef6666abae4c5f31283e1'});
+      const findStudent = await StudentInformation.findOne({ 'studentId': '66f2db69966acdcc7c5aaa2b'});
+
+    //   await Student.findOne({ email: payload.email.trim().toLowerCase() });
 
       console.log(findAgent, "aaaaaaaaaaaaaaaaaaaaa>>>");
-      console.log(findStudent, "ssssssssssssss>>>");
+    //   console.log(findStudent, "ssssssssssssss>>>");
       // Determine the customUserId
       result.customUserId = findAgent
         ? findAgent.agId

@@ -14,37 +14,27 @@ import { sendEmailVerification } from "../utils/sendMail.js";
 async function generateStudentId() {
   const today = new Date();
 
-  // Format the date components (DDMMYY)
-  const day = today.getDate().toString().padStart(2, '0');
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const year = today.getFullYear().toString().slice(2);
+  // Format the date components (YYMMDD)
+  const year = today.getFullYear().toString().slice(2); // Last 2 digits of the year
+  const month = (today.getMonth() + 1).toString().padStart(2, '0'); // Month with leading zero if necessary
+  const day = today.getDate().toString().padStart(2, '0'); // Day with leading zero if necessary
 
-  // Construct the base Student ID without the sequence number
+  // Construct the base Student ID (ST-YYMMDD)
   const baseId = `ST-${year}${month}${day}`;
 
-  // Find the last created student with a matching date prefix (e.g., ST-240926)
-  const lastStudent = await StudentInformation
-    .findOne({ studentId: { $regex: `^${baseId}` } })  // Search for existing IDs with the same base
-    .sort({ studentId: -1 })  // Sort by descending order to get the last created one
-    .exec();
+  // Count the number of students created with the same YYMMDD prefix
+  const count = await StudentInformation.countDocuments({ studentId: { $regex: `^${baseId}` } }).exec();
 
-  let sequenceNumber = 1;  // Default sequence number if no match found
-
-  if (lastStudent) {
-    // Extract the last two digits (sequence number) from the last studentId
-    const lastId = lastStudent.studentId;
-    const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the studentId
-    
-    // Increment the sequence number for the new ID
-    sequenceNumber = lastSequence + 1;
-  }
+  // The sequence number is based on the count (0-based index + 1)
+  const sequenceNumber = count + 1;
 
   // Format the sequence number as a two-digit number
-  const sequenceStr = sequenceNumber.toString().padStart(2, '0');
+  const sequenceStr = sequenceNumber.toString().padStart(2, '0'); // Ensure it's always 2 digits
 
-  // Return the unique Student ID (e.g., ST-24092601)
+  // Return the unique Student ID (e.g., ST-24102101)
   return `${baseId}${sequenceStr}`;
 }
+
 
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
