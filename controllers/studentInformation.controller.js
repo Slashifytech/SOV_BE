@@ -77,9 +77,9 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
   // If email exists but is associated with another user, deny access
   if (existingRecordByEmail && existingRecordByEmail[idField]?.toString() !== req.user.id) {
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: Email already associated with another user"));
+    return res.status(400).json(new ApiResponse(400, {}, "Email is already associated with another user"));
   }
-   
+
   const {edit} = req.query;
   // Prepare data to save or update
   let data;
@@ -123,6 +123,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
     return res.status(201).json(new ApiResponse(201, studentInfo, "Personal Information saved successfully"));
   }
 });
+
 
 const studentResidenceAndAddress = async (req, res) => {
     const payload = req.body;
