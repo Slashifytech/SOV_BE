@@ -227,10 +227,8 @@ const login = asyncHandler(async (req, res) => {
   
 
   if (payload.role === "3") {
-    console.log("Payload email:", payload.email.trim().toLowerCase());
-    
+
     user = await Student.findOne({ email: payload.email.trim().toLowerCase() });
-    console.log("Queried user:", user);
     
     if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
@@ -307,6 +305,7 @@ const logout = asyncHandler(async (req, res) => {
 const changePassword = asyncHandler(async (req, res) => {
   const payload = req.body;
   const validation = changePasswordSchema.safeParse(payload);
+
   if (!validation.success) {
     return res
       .status(400)
@@ -314,9 +313,17 @@ const changePassword = asyncHandler(async (req, res) => {
   }
   let user;
   if(req.user.role === '3'){
+
     user = await Student.findOne({ _id: req.user.id });
     if (!user || !user.approved ) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+    }
+
+    const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+    if(!isPasswordValid){
+      return res.status(400).json(
+        new ApiResponse(400, {}, "Invalid password")
+      )
     }
     const hashPassword = await bcrypt.hash(payload.newPassword, 10);
   await Student.findOneAndUpdate(
@@ -334,6 +341,14 @@ const changePassword = asyncHandler(async (req, res) => {
     if (!user || !user.approved) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
+     
+    const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+  if(!isPasswordValid){
+    return res.status(400).json(
+      new ApiResponse(400, {}, "Invalid password")
+    )
+  }
+
     const hashPassword = await bcrypt.hash(payload.newPassword, 10);
   await Agent.findOneAndUpdate(
     { _id: req.user.id },
@@ -349,14 +364,7 @@ const changePassword = asyncHandler(async (req, res) => {
       new ApiResponse(400, {}, "Invalid user type ")
     )
   }
-  const isPasswordValid = await bcrypt.compare(payload.password, user.password);
-  if(!isPasswordValid){
-    return res.status(400).json(
-      new ApiResponse(400, {}, "Invalid password")
-    )
-  }
   
-
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "password updated successfully"));

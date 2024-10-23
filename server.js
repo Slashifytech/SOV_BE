@@ -27,6 +27,8 @@ import agentRouter from "./routes/agentDashboard.routes.js";
 import wishlistRouter from "./routes/wishlist.routes.js";
 import ticketRouter from "./routes/ticket.routes.js";
 import adminRouter from "./routes/adminDashboard.routes.js";
+import adminAuthRouter from "./routes/admin.routes.js";
+
 
 
 // User routes
@@ -42,5 +44,6 @@ app.use("/api/agent", agentRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/ticket",ticketRouter );
 app.use("/api/admin",adminRouter );
+app.use("/api/auth/admin",adminAuthRouter );
 
 export default app;

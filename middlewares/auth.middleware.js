@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { Agent } from "../models/agent.model.js";
+import { Admin } from "../models/admin.model.js";
 
 const verifyJwt = asyncHandler(async (req, res, next) => {
   try {
@@ -61,13 +62,16 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
       token,
       process.env.ACCESS_TOKEN_SECRET
     );
+
+    // console.log()
     
     let user;
     if (decodeToken.role === "0") {
-      user = await Agent.findById(decodeToken.id).select(
-        "-password -refreshToken"
+      user = await Admin.findById(decodeToken.id).select(
+        "-password "
       );
     }
+
     if (user.role !== "0") {
       return res
         .status(401)
