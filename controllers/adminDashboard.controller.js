@@ -189,8 +189,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         userType,
       };
 
-      // Fetch the custom user ID from the agent or student collection
-    //   console.log(userId.toString(), "+++++++++>>>>>>>>>>>");
+    //   this findAgent findStudent retun null why ? please fix this 
       const findAgent = await Company.findOne({ agentId: userId.toString() });
       const findStudent = await StudentInformation.findOne({
         studentId: userId.toString(),
@@ -451,82 +450,115 @@ const getTotalUserCount = asyncHandler(async (req, res) => {
 });
 
 const getAllDataAgentStudent = asyncHandler(async (req, res) => {
-  // Pagination parameters
-  const page = parseInt(req.query.page) || 1; // Get the current page from query, default to 1
-  const limit = parseInt(req.query.limit) || 10; // Get the limit from query, default to 10
-
-  // Fetch companies with pagination
-  const companies = await Company.find({ pageCount: 6 })
-    .select("primaryContact.firstName primaryContact.lastName agId")
-    .lean()
-    .skip((page - 1) * limit) // Skip the previous pages
-    .limit(limit); // Limit the number of results
-
-  const formattedAgents = companies.map((company) => {
-    const { firstName, lastName } = company.primaryContact || {};
-    return {
-      firstName: firstName || "N/A",
-      lastName: lastName || "N/A",
-      agId: company.agId,
-      type: "agent",
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1; // Current page, defaults to 1
+    const limit = parseInt(req.query.limit) || 10; // Limit per page, defaults to 10
+    const skip = (page - 1) * limit; // Calculate skip
+  
+    const { search } = req.query; // Get the 'search' filter from query params
+  
+    let formattedAgents = [];
+    let formattedStudents = [];
+    let totalCompanies = 0;
+    let totalStudents = 0;
+    let totalPages = 0;
+    let totalStudentPages = 0;
+  
+    // Create search conditions based on 'search' query for both agents and students
+    const searchCondition = search
+      ? {
+          $or: [
+            { "primaryContact.firstName": new RegExp(search, "i") },
+            { "primaryContact.lastName": new RegExp(search, "i") },
+          ],
+        }
+      : {}; // If no search query, don't apply a filter
+  
+    const studentSearchCondition = search
+      ? {
+          $or: [
+            { "personalInformation.firstName": new RegExp(search, "i") },
+            { "personalInformation.lastName": new RegExp(search, "i") },
+          ],
+        }
+      : {}; // If no search query, don't apply a filter
+  
+    // Fetch agents
+    const companies = await Company.find({ pageCount: 6, ...searchCondition })
+      .select("primaryContact.firstName primaryContact.lastName agId")
+      .lean()
+      .skip(skip)
+      .limit(limit);
+  
+    formattedAgents = companies.map((company) => {
+      const { firstName, lastName } = company.primaryContact || {};
+      return {
+        firstName: firstName || "N/A",
+        lastName: lastName || "N/A",
+        agId: company.agId,
+        type: "agent",
+      };
+    });
+  
+    totalCompanies = await Company.countDocuments({ pageCount: 6, ...searchCondition });
+    totalPages = Math.ceil(totalCompanies / limit); // Calculate total pages for agents
+  
+    // Fetch students
+    const students = await StudentInformation.find(
+      { pageCount: 3, deleted: false, ...studentSearchCondition },
+      {
+        "personalInformation.firstName": 1,
+        "personalInformation.lastName": 1,
+        stId: 1,
+      }
+    )
+      .lean()
+      .skip(skip)
+      .limit(limit);
+  
+    formattedStudents = students.map((student) => ({
+      firstName: student.personalInformation?.firstName || "N/A",
+      lastName: student.personalInformation?.lastName || "N/A",
+      stId: student.stId,
+      type: "student",
+    }));
+  
+    totalStudents = await StudentInformation.countDocuments({
+      pageCount: 3,
+      deleted: false,
+      ...studentSearchCondition,
+    });
+    totalStudentPages = Math.ceil(totalStudents / limit); // Calculate total pages for students
+  
+    // Combine agents and students
+    const combinedResults = [...formattedAgents, ...formattedStudents];
+  
+    // Calculate the overall total count and total pages
+    const totalCount = formattedAgents.length + formattedStudents.length;
+    const combinedTotalPages = totalPages + totalStudentPages;
+  
+    // Prepare pagination info
+    const paginationInfo = {
+      currentPage: page,
+      nextPage: page < combinedTotalPages ? page + 1 : null,
+      previousPage: page > 1 ? page - 1 : null,
+      totalPages: combinedTotalPages,
+      totalCount: totalCompanies + totalStudents,
     };
+  
+    // Return the combined results with pagination info
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          combinedResults,
+          "Data fetched successfully",
+          paginationInfo
+        )
+      );
   });
-
-  // Get total count of companies for pagination
-  const totalCompanies = await Company.countDocuments({ pageCount: 6 });
-  const totalPages = Math.ceil(totalCompanies / limit); // Calculate total pages
-
-  // Fetch students with pagination
-  const students = await StudentInformation.find(
-    { pageCount: 3, deleted: false },
-    {
-      "personalInformation.firstName": 1,
-      "personalInformation.lastName": 1,
-      stId: 1,
-    }
-  )
-    .lean()
-    .skip((page - 1) * limit) // Skip the previous pages
-    .limit(limit); // Limit the number of results
-
-  const formattedStudents = students.map((student) => ({
-    firstName: student.personalInformation?.firstName,
-    lastName: student.personalInformation?.lastName,
-    stId: student.stId,
-    type: "student",
-  }));
-
-  // Get total count of students for pagination
-  const totalStudents = await StudentInformation.countDocuments({
-    pageCount: 3,
-    deleted: false,
-  });
-  const totalStudentPages = Math.ceil(totalStudents / limit); // Calculate total pages
-
-  // Merge formattedAgents and formattedStudents
-  const combinedResults = [...formattedAgents, ...formattedStudents];
-
-  // Prepare pagination info
-  const paginationInfo = {
-    currentPage: page,
-    nextPage: page < totalPages ? page + 1 : null,
-    previousPage: page > 1 ? page - 1 : null,
-    totalPages: totalPages + totalStudentPages, // Combine total pages from both
-    totalCount: totalCompanies + totalStudents, // Total count of agents and students
-  };
-
-  // Return the combined results with pagination info
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        combinedResults,
-        "data fetched successfully",
-        paginationInfo
-      )
-    );
-});
+  
 
 const getAgentById = asyncHandler(async (req, res) => {
   // Extract the company ID from the request parameters
