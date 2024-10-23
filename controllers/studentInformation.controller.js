@@ -77,7 +77,7 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
   // If email exists but is associated with another user, deny access
   if (existingRecordByEmail && existingRecordByEmail[idField]?.toString() !== req.user.id) {
-    return res.status(400).json(new ApiResponse(400, {}, "Email is already associated with another user"));
+    return res.status(400).json(new ApiResponse(400, {}, "User already exists from this email"));
   }
 
   const {edit} = req.query;
