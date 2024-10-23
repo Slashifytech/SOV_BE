@@ -13,6 +13,6 @@ router.route("/login").post(adminLogin);
 router.route("/change-password").post(verifyAdmin, changePassword);
 router.route("/change-email").post(verifyAdmin, changeAdminEmail);
 router.route("/edit-profile").patch(verifyAdmin, editProfile);
-router.route("/profile").patch(verifyAdmin, getProfileData);
+router.route("/profile").get(verifyAdmin, getProfileData);
 
 export default router;
