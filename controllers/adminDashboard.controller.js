@@ -191,7 +191,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         console.log(userId)
       const findAgent = await Company.findOne({ agentId: userId });
       const findStudent = await StudentInformation.findOne({ studentId: userId });
-      // console.log(findAgent.pageCount, "aaaaa>>>>");
+      // console.log(findAgent., "aaaaa>>>>");
 
       // Determine the customUserId
       result.customUserId = findAgent
@@ -201,10 +201,15 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         : null;
         
       // Extract agent's firstName and lastName if found
-      if (findAgent && findAgent.primaryContact) {
+      if (findAgent) {
           // console.log(findAgent, "+++++++")
-        result.agentFirstName = findAgent.primaryContact.firstName;
-        result.agentLastName = findAgent.primaryContact.lastName;
+          const agentData = await Agent.findById(userId);
+          if(agentData){
+            result.agentName = agentData.accountDetails.primaryContactPerson.name;
+          }
+          
+       
+        // result.agentLastName = findAgent.primaryContact.lastName;
       }
 
       // Check if offerLetter has personalInformation
