@@ -225,13 +225,12 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
   }
 
   // Find the institution
-  const institution = await Institution.findOne({
-    _id: institutionId,
-  }).populate("studentInformationId");
+  const institution = await Institution.findById(institutionId);
+  
   if (!institution) {
     return res
       .status(404)
-      .json(new ApiResponse(404, {}, "Institution not found"));
+      .json(new ApiResponse(404, {}, "Application not found"));
   }
   const userId = institution.userId;
   // const findStudent = await Student.findOne({_id: userId}) ;

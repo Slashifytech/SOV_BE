@@ -19,7 +19,7 @@ import { TempStudent } from "../models/tempStudent.model.js";
 import { TempAgent } from "../models/tempAgent.model.js";
 import crypto from 'crypto'; // Import crypto for generating a unique token
 import { Student } from "../models/student.model.js";
-import { agentAccountCredentials, agentSignUpTemp, studentAccountCredentials, studentSignUpTemp } from "../utils/mailTemp.js";
+import { agentAccountCredentials, agentPasswordResetEmail, agentSignUpTemp, studentAccountCredentials, studentPasswordResetEmail, studentSignUpTemp } from "../utils/mailTemp.js";
 
 
 
@@ -432,9 +432,15 @@ const requestPasswordResetOtp = asyncHandler(async (req, res) => {
 
   // Generate OTP and send it to the user's email
   const OTP = generateOtp();
-  await sendEmailVerification(payload.email, OTP);
+   let temp;
+   if(payload.type === '3'){
+    temp = studentPasswordResetEmail(OTP)
+   } 
+   if(payload.type === '2'){
+    temp = agentPasswordResetEmail(OTP)
+   }
+  await sendEmail({to:payload.email, subject:"OTP Verification for Forget Password Request", htmlContent:temp })
 
-  // Save OTP and expiry to the appropriate temp record (agent or student)
   if (payload.type === '2') {
     await TempAgent.updateOne(
       { "accountDetails.founderOrCeo.email": payload.email },

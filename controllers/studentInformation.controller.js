@@ -22,8 +22,8 @@ async function generateStudentId() {
   // Construct the base Student ID (ST-YYMMDD)
   const baseId = `ST-${year}${month}${day}`;
 
-  // Count the number of students created with the same YYMMDD prefix
-  const count = await StudentInformation.countDocuments({ studentId: { $regex: `^${baseId}` } }).exec();
+  // Use the 'stId' field for counting, not 'studentId' (because 'studentId' is an ObjectId, and regex doesn't work with ObjectId)
+  const count = await StudentInformation.countDocuments({ stId: { $regex: `^${baseId}` } }).exec();
 
   // The sequence number is based on the count (0-based index + 1)
   const sequenceNumber = count + 1;
@@ -34,8 +34,6 @@ async function generateStudentId() {
   // Return the unique Student ID (e.g., ST-24102101)
   return `${baseId}${sequenceStr}`;
 }
-
-
 
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
