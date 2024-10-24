@@ -232,22 +232,22 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
       .status(404)
       .json(new ApiResponse(404, {}, "Application not found"));
   }
-  const userId = institution.userId;
-  // const findStudent = await Student.findOne({_id: userId}) ;
-  const findAgent = await Agent.findOne({ _id: userId });
+  // const userId = institution.userId;
+ 
+  // const findAgent = await Agent.findOne({ _id: userId });
   // Retrieve student's information
-  const studentInfo = await StudentInformation.findOne({
-    _id: institution.studentInformationId,
-  });
-  if (!studentInfo) {
-    return res
-      .status(404)
-      .json(new ApiResponse(404, {}, "Student information not found"));
-  }
+  // const studentInfo = await StudentInformation.findOne({
+  //   _id: institution.studentInformationId,
+  // });
+  // if (!studentInfo) {
+  //   return res
+  //     .status(404)
+  //     .json(new ApiResponse(404, {}, "Student information not found"));
+  // }
 
-  const { firstName, email } = studentInfo.personalInformation;
-  const { country, course } = institution.offerLetter.preferences;
-  const collegeName = institution.offerLetter.preferences.institution; // Assuming this is the correct field for college name
+  // const { firstName, email } = studentInfo.personalInformation;
+  // const { country, course } = institution.offerLetter.preferences;
+  // const collegeName = institution.offerLetter.preferences.institution; // Assuming this is the correct field for college name
 
   // Update the status for the specified section
   if (section === "offerLetter") {
@@ -256,62 +256,62 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
       if (message) {
         institution.offerLetter.message = message;
       }
-      const temp = studentOfferLetterApprovedTemp(
-        firstName,
-        collegeName,
-        country,
-        course
-      );
-      await sendEmail({
-        to: email,
-        subject: "Your Offer Letter is Approved Proceed with Payment",
-        htmlContent: temp,
-      });
-      if (findAgent) {
-        const temp = agentOfferLetterApproved(
-          findAgent.accountDetails.primaryContactPerson.name,
-          collegeName,
-          country,
-          course
-        );
-        await sendEmail({
-          to: findAgent.accountDetails.founderOrCeo.email,
-          subject: `Offer Letter Approved for Proceed with Next Steps`,
-          htmlContent: temp,
-        });
+      // const temp = studentOfferLetterApprovedTemp(
+      //   firstName,
+      //   collegeName,
+      //   country,
+      //   course
+      // );
+      // await sendEmail({
+      //   to: email,
+      //   subject: "Your Offer Letter is Approved Proceed with Payment",
+      //   htmlContent: temp,
+      // });
+      // if (findAgent) {
+        // const temp = agentOfferLetterApproved(
+        //   findAgent.accountDetails.primaryContactPerson.name,
+        //   collegeName,
+        //   country,
+        //   course
+        // );
+        // await sendEmail({
+        //   to: findAgent.accountDetails.founderOrCeo.email,
+        //   subject: `Offer Letter Approved for Proceed with Next Steps`,
+        //   htmlContent: temp,
+        // });
       }
     } else if (status == "rejected") {
       institution.offerLetter.status = status;
       if (message) {
         institution.offerLetter.message = message;
       }
-      const temp = studentOfferLetterRejectedTemp(
-        firstName,
-        collegeName,
-        country,
-        course,
-        message
-      );
-      await sendEmail({
-        to: email,
-        subject: "Your Offer Letter is Approved Proceed with Payment",
-        htmlContent: temp,
-      });
-      if (findAgent) {
-        const temp = agentOfferLetterRejected(
-          findAgent.accountDetails.primaryContactPerson.name,
-          collegeName,
-          country,
-          course,
-          message
-        );
-        await sendEmail({
-          to: findAgent.accountDetails.founderOrCeo.email,
-          subject: `Offer Letter Rejected for Action Required`,
-          htmlContent: temp,
-        });
-      }
-    }
+      // const temp = studentOfferLetterRejectedTemp(
+      //   firstName,
+      //   collegeName,
+      //   country,
+      //   course,
+      //   message
+      // );
+      // await sendEmail({
+      //   to: email,
+      //   subject: "Your Offer Letter is Approved Proceed with Payment",
+      //   htmlContent: temp,
+      // });
+      // if (findAgent) {
+      //   const temp = agentOfferLetterRejected(
+      //     findAgent.accountDetails.primaryContactPerson.name,
+      //     collegeName,
+      //     country,
+      //     course,
+      //     message
+      //   );
+      //   await sendEmail({
+      //     to: findAgent.accountDetails.founderOrCeo.email,
+      //     subject: `Offer Letter Rejected for Action Required`,
+      //     htmlContent: temp,
+      //   });
+      // }
+    // }
   } else if (section === "gic") {
     institution.gic.status = status;
     if (message) {
