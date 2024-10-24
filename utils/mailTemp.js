@@ -144,8 +144,8 @@ Helping you make your study abroad dreams a reality</p>
 `;
 }
 
-export const studentOfferLetterRejectedTemp =  (firstName,collegeName, country, courseName, rejectionReason )=>{
-     return `<p>Dear <strong>${firstName}</strong>,</p>
+export const studentOfferLetterRejectedTemp =  (collegeName, country, courseName, rejectionReason )=>{
+     return `<p>Dear <strong></strong>,</p>
 
 <p>Thank you for applying to <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program. Unfortunately, your offer letter has been rejected.</p>
 
@@ -203,10 +203,10 @@ Empowering agents to help students achieve their study abroad goals</p>
 `
 }
 
-export const agentOfferLetterRejected = (agentFirstName, studentName, collegeName, country, courseName, rejectionReason)=>{
+export const agentOfferLetterRejected = (agentFirstName, collegeName, country, courseName, rejectionReason)=>{
   return `<p>Dear <strong>${agentFirstName}</strong>,</p>
 
-<p>We regret to inform you that the offer letter for <strong>${studentName}</strong> has been rejected by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
+<p>We regret to inform you that the offer letter for <strong></strong> has been rejected by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
 
 <p><strong>Student Details:</strong></p>
 <ul>
