@@ -76,30 +76,19 @@ export const getAllApplications = asyncHandler(async (req, res) => {
   const query = {};
   const orConditions = [];
 
-  // Filtering by applicationId if provided
+  // Filtering logic (unchanged)
   if (req.query.applicationId) {
     query.applicationId = req.query.applicationId;
   }
 
-  // Filtering by fullName if provided
   if (req.query.fullName) {
+    const regex = { $regex: req.query.fullName, $options: "i" };
     orConditions.push(
-      {
-        "offerLetter.personalInformation.fullName": {
-          $regex: req.query.fullName,
-          $options: "i",
-        },
-      },
-      {
-        "gic.personalDetails.fullName": {
-          $regex: req.query.fullName,
-          $options: "i",
-        },
-      }
+      { "offerLetter.personalInformation.fullName": regex },
+      { "gic.personalDetails.fullName": regex }
     );
   }
 
-  // Filtering by phoneNumber if provided
   if (req.query.phoneNumber) {
     orConditions.push(
       { "offerLetter.personalInformation.phoneNumber": req.query.phoneNumber },
@@ -107,7 +96,6 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     );
   }
 
-  // Filtering by institution if provided
   if (req.query.institution) {
     query["offerLetter.preferences.institution"] = {
       $regex: req.query.institution,
@@ -115,7 +103,6 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     };
   }
 
-  // Filtering by country if provided
   if (req.query.country) {
     query["offerLetter.preferences.country"] = {
       $regex: req.query.country,
@@ -123,37 +110,25 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     };
   }
 
-  // Filtering by status
   if (req.query.status) {
     const validStatuses = ["underreview", "completed", "reject", "pending", "approved"];
-    if (validStatuses.includes(req.query.status)) {
-      query.$or = [
-        { "offerLetter.status": req.query.status },
-        { "gic.status": req.query.status },
-      ];
-    } else {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, {}, "Invalid status filter provided."));
+    if (!validStatuses.includes(req.query.status)) {
+      return res.status(400).json(new ApiResponse(400, {}, "Invalid status filter provided."));
     }
+    query.$or = [
+      { "offerLetter.status": req.query.status },
+      { "gic.status": req.query.status },
+    ];
   }
 
-  // Filtering by application type (offerLetter, gic, etc.)
   if (req.query.filterType) {
-    switch (req.query.filterType.toLowerCase()) {
-      case "offerletter":
-        query["offerLetter"] = { $exists: true };
-        break;
-      case "gic":
-        query["gic"] = { $exists: true };
-        break;
-      case "all":
-        // No additional filtering for all
-        break;
-      default:
-        return res
-          .status(400)
-          .json(new ApiResponse(400, {}, "Invalid filter type provided."));
+    const filterType = req.query.filterType.toLowerCase();
+    if (filterType === "offerletter") {
+      query["offerLetter"] = { $exists: true };
+    } else if (filterType === "gic") {
+      query["gic"] = { $exists: true };
+    } else if (filterType !== "all") {
+      return res.status(400).json(new ApiResponse(400, {}, "Invalid filter type provided."));
     }
   }
 
@@ -166,91 +141,80 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     .select("-__v") // Exclude __v field
     .skip(skip)
     .limit(limit)
-    .exec();
+    .lean(); // Use lean() to improve performance by returning plain JavaScript objects
 
-  // Get the total number of matching applications for pagination
   const totalApplications = await Institution.countDocuments(query);
 
-  // Transform applications to include only required fields
-  const transformedApplications = await Promise.all(
-    applications.map(async (app) => {
-      const userId = app.studentInformationId || app.userId; // Adjust based on your model structure
-      const userType = app.studentInformationId ? "student" : "agent"; // Assuming studentInformationId indicates a student
+  // Transform applications and consolidate agent/student fetches
+  const transformedApplications = applications.map(async (app) => {
+    const userId =  app.userId;
+    const userType = app.studentInformationId ? "student" : "agent";
 
-      // Initialize result object with required fields
-      const result = {
-        userId,
-        userType,
-        institutionId: app._id, // Include institution._id
-        applicationId: app.applicationId, // Add applicationId
-        status: null, // Placeholder for status
-        message: null, // Placeholder for message
-        agentFirstName: null, // Placeholder for agent's first name
-        agentLastName: null, // Placeholder for agent's last name
-      };
-        console.log(userId)
-      const findAgent = await Company.findOne({ agentId: userId });
-      const findStudent = await StudentInformation.findOne({ studentId: userId });
-      // console.log(findAgent.agId, "aaaaa>>>>");
+    const result = {
+      userId,
+      userType,
+      institutionId: app._id,
+      applicationId: app.applicationId,
+      status: null,
+      message: null,
+      agentName: null
+    };
+     
+    console.log(userId, "+++")
 
-      // Determine the customUserId
-      result.customUserId = findAgent
-        ? findAgent.agId
-        : findStudent
-        ? findStudent.stId
-        : null;
-        
-      // Extract agent's firstName and lastName if found
-      if (findAgent) {
-          // console.log(findAgent, "+++++++")
-          const agentData = await Agent.findById(userId);
-          if(agentData){
-            result.agentName = agentData.accountDetails.primaryContactPerson.name;
-          }
-          
-       
-        // result.agentLastName = findAgent.primaryContact.lastName;
+    // Fetch agent or student data and avoid redundant queries
+    const findAgent = await Company.findOne({ agentId: userId }).lean();
+    const findStudent = !findAgent && (await StudentInformation.findOne({ studentId: userId }).lean());
+    
+    // console.log(findAgent, "------")
+    
+
+    result.customUserId = findAgent ? findAgent.agId : findStudent ? findStudent.stId : null;
+
+    // Fetch agent details only if an agent is found
+    if (findAgent) {
+      // Use the agentId from findAgent, not userId
+      const agentData = await Agent.findById(userId.toString());
+      console.log(agentData, "0000000000")
+      if (agentData) {
+        result.agentName = agentData.accountDetails?.primaryContactPerson?.name || null;
       }
+    }
 
-      // Check if offerLetter has personalInformation
-      if (app.offerLetter && app.offerLetter.personalInformation) {
-        result.fullName = app.offerLetter.personalInformation.fullName;
-        result.type = "offerLetter"; // Set type to offerLetter
-        result.status = app.offerLetter.status; // Add offerLetter status
-        result.message = app.offerLetter.message; // Add offerLetter message
-      }
-      // Check if gic has personalDetails
-      else if (app.gic && app.gic.personalDetails) {
-        result.fullName = app.gic.personalDetails.fullName;
-        result.type = "gic"; // Set type to gic
-        result.status = app.gic.status; // Add gic status
-        result.message = app.gic.message; // Add gic message
-      }
+    // Check offerLetter and gic status
+    if (app.offerLetter?.personalInformation) {
+      result.fullName = app.offerLetter.personalInformation.fullName;
+      result.type = "offerLetter";
+      result.status = app.offerLetter.status;
+      result.message = app.offerLetter.message;
+    } else if (app.gic?.personalDetails) {
+      result.fullName = app.gic.personalDetails.fullName;
+      result.type = "gic";
+      result.status = app.gic.status;
+      result.message = app.gic.message;
+    }
 
-      return result.fullName ? result : null; // Return result if fullName exists, else null
-    })
-  );
+    return result.fullName ? result : null;
+  });
 
-  // Filter out null entries
-  const filteredApplications = transformedApplications.filter((app) => app);
+  // Resolve all promises
+  const filteredApplications = (await Promise.all(transformedApplications)).filter(Boolean);
 
   // Pagination logic
   const totalPages = Math.ceil(totalApplications / limit);
-  const currentPage = page;
-  const previousPage = currentPage > 1 ? currentPage - 1 : null;
-  const nextPage = currentPage < totalPages ? currentPage + 1 : null;
 
-  // Respond with paginated applications and metadata
   res.status(200).json({
     total: totalApplications,
-    currentPage,
-    previousPage,
-    nextPage,
+    currentPage: page,
+    previousPage: page > 1 ? page - 1 : null,
+    nextPage: page < totalPages ? page + 1 : null,
     totalPages,
     limit,
     applications: filteredApplications,
   });
 });
+
+
 
 
 
