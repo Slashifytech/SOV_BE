@@ -352,8 +352,5 @@ const getCompanyData = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, responseData, "Company data fetched successfully"));
 });
 
-  
-   
-
 
 export { registerCompany, registerCompanyContact, registerBankDetails, registerCompanyOverview, registerCompanyOperations, registerReferences, getCompanyData };

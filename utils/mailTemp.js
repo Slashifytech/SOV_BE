@@ -144,8 +144,8 @@ Helping you make your study abroad dreams a reality</p>
 `;
 }
 
-export const studentOfferLetterRejectedTemp =  (firstName,collegeName, country, courseName, rejectionReason )=>{
-     return `<p>Dear <strong>${firstName}</strong>,</p>
+export const studentOfferLetterRejectedTemp =  (collegeName, country, courseName, rejectionReason )=>{
+     return `<p>Dear <strong></strong>,</p>
 
 <p>Thank you for applying to <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program. Unfortunately, your offer letter has been rejected.</p>
 
@@ -203,15 +203,15 @@ Empowering agents to help students achieve their study abroad goals</p>
 `
 }
 
-export const agentOfferLetterRejected = (agentFirstName, studentName, collegeName, country, courseName, rejectionReason)=>{
+export const agentOfferLetterRejected = (agentFirstName, collegeName, country, courseName, rejectionReason)=>{
   return `<p>Dear <strong>${agentFirstName}</strong>,</p>
 
-<p>We regret to inform you that the offer letter for <strong>${studentName}</strong> has been rejected by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
+<p>We regret to inform you that the offer letter for <strong></strong> has been rejected by <strong>${collegeName}</strong> in <strong>${country}</strong> for the <strong>${courseName}</strong> program.</p>
 
 <p><strong>Student Details:</strong></p>
 <ul>
   <li><strong>Student ID:</strong> ${studentId}</li>
-  <li><strong>Student Name:</strong> ${studentName}</li>
+  <li><strong>Student Name:</strong> </li>
   <li><strong>College Name:</strong> ${collegeName}</li>
   <li><strong>Course Name:</strong> ${courseName}</li>
   <li><strong>Country:</strong> ${countryName}</li>
@@ -239,6 +239,62 @@ Partnering with you to help students achieve their study abroad dreams</p>
 
 `;
 }
+
+
+export const agentPasswordResetEmail = (agentFirstName, otpCode) => {
+  return `<p>Dear <strong>${agentFirstName}</strong>,</p>
+
+<p>We received a request to reset your password for your agent account on Sov Portal. To proceed, please verify your identity by entering the OTP (One-Time Password) provided below:</p>
+
+<p><strong>Your OTP:</strong> <strong>${otpCode}</strong></p>
+
+<p>If you did not request a password reset, please ignore this email or contact our support team immediately.</p>
+
+<p><strong>Next Steps:</strong></p>
+<ul>
+  <li>Enter the OTP on the password reset page.</li>
+  <li>Once verified, you’ll be able to set a new password.</li>
+</ul>
+
+<p>For security reasons, do not share this OTP with anyone. If you need further assistance, please reach out to our support team at <a href="mailto:support@sovportal.in">support@sovportal.in</a>.</p>
+
+<p>Thank you for using Sov Portal!</p>
+
+<p>Best regards,</p>
+<p><strong>Sov Portal</strong><br>
+Your trusted partner in study visa solutions</p>
+`;
+};
+
+
+export const studentPasswordResetEmail = (otpCode) => {
+  return `<p>Dear Student</p>
+
+<p>We received a request to reset your password for your student account on Sov Portal. To proceed, please verify your identity by entering the OTP (One-Time Password) provided below:</p>
+
+<p><strong>Your OTP:</strong> <strong>${otpCode}</strong></p>
+
+<p>If you did not request a password reset, please ignore this email or contact our support team immediately.</p>
+
+<p><strong>Next Steps:</strong></p>
+<ul>
+  <li>Enter the OTP on the password reset page.</li>
+  <li>Once verified, you’ll be able to set a new password.</li>
+</ul>
+
+<p>For security reasons, do not share this OTP with anyone. If you need further assistance, please reach out to our support team at <a href="mailto:support@sovportal.in">support@sovportal.in</a>.</p>
+
+<p>Thank you for using Sov Portal!</p>
+
+<p>Best regards,</p>
+<p><strong>Sov Portal</strong><br>
+Supporting you on your study abroad journey</p>
+`;
+};
+
+
+
+
 
 
 
