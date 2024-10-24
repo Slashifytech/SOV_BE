@@ -461,7 +461,6 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
   // Pagination parameters
   const page = parseInt(req.query.page) || 1; // Current page, defaults to 1
   const limit = parseInt(req.query.limit) || 10; // Limit per page, defaults to 10
-  const skip = (page - 1) * limit; // Calculate skip
 
   const { search } = req.query; // Get the 'search' filter from query params
 
@@ -492,18 +491,20 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
     : {}; // If no search query, don't apply a filter
 
   // Fetch agents
-  const companies = await Company.find({ pageCount: 6, ...searchCondition })
-    .select("primaryContact.firstName primaryContact.lastName agId")
+  const agents = await Company.find({ pageCount: 6, ...searchCondition })
+    .select("primaryContact.firstName primaryContact.lastName agId _id pageStatus.message") // Include _id and message
     .lean()
-    .skip(skip)
+    .skip((page - 1) * limit) // Apply skip for agents
     .limit(limit);
 
-  formattedAgents = companies.map((company) => {
+  formattedAgents = agents.map((company) => {
     const { firstName, lastName } = company.primaryContact || {};
     return {
       firstName: firstName || "N/A",
       lastName: lastName || "N/A",
       agId: company.agId,
+      _id: company._id, // Include the _id
+      message: company.pageStatus?.message || "", // Include the message
       type: "agent",
     };
   });
@@ -521,16 +522,20 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
       "personalInformation.firstName": 1,
       "personalInformation.lastName": 1,
       stId: 1,
+      _id: 1, // Include _id
+      "pageStatus.message": 1, // Include message
     }
   )
     .lean()
-    .skip(skip)
+    .skip((page - 1) * limit) // Apply skip for students
     .limit(limit);
 
   formattedStudents = students.map((student) => ({
     firstName: student.personalInformation?.firstName || "N/A",
     lastName: student.personalInformation?.lastName || "N/A",
     stId: student.stId,
+    _id: student._id, // Include the _id
+    message: student.pageStatus?.message || "", // Include the message
     type: "student",
   }));
 
@@ -544,31 +549,23 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
   // Combine agents and students
   const combinedResults = [...formattedAgents, ...formattedStudents];
 
-  // Calculate the overall total count and total pages
-  const totalCount = formattedAgents.length + formattedStudents.length;
-  const combinedTotalPages = totalPages + totalStudentPages;
-
   // Prepare pagination info
   const paginationInfo = {
     currentPage: page,
-    nextPage: page < combinedTotalPages ? page + 1 : null,
+    nextPage: page < totalPages ? page + 1 : null, // Next page for agents
     previousPage: page > 1 ? page - 1 : null,
-    totalPages: combinedTotalPages,
+    totalPages: Math.max(totalPages, totalStudentPages), // Max total pages between agents and students
     totalCount: totalCompanies + totalStudents,
   };
 
   // Return the combined results with pagination info
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        combinedResults,
-        "Data fetched successfully",
-        paginationInfo
-      )
-    );
+  return res.status(200).json(
+    new ApiResponse(200, combinedResults, "Data fetched successfully", paginationInfo)
+  );
 });
+
+
+
 
 const getAgentById = asyncHandler(async (req, res) => {
   // Extract the company ID from the request parameters
