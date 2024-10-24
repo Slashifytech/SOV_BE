@@ -1,6 +1,9 @@
+import { Agent } from "../models/agent.model.js";
 import { Company } from "../models/company.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { agentRegistrationComplete } from "../utils/mailTemp.js";
+import { sendEmailVerification } from "../utils/sendMail.js";
 import { BankDetailsSchema, CompanyContactSchema, CompanyDetailsSchema, CompanyOperationsSchema, CompanyOverviewSchema, ReferenceSchema } from "../validators/company.validator.js";
 import { z } from 'zod';
 
@@ -9,37 +12,28 @@ import { z } from 'zod';
 async function generateAgentId() {
   const today = new Date();
 
-  // Format the date components (DDMMYY)
-  const day = today.getDate().toString().padStart(2, '0');
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const year = today.getFullYear().toString().slice(2);
+  // Format the date components (YYMMDD)
+  const year = today.getFullYear().toString().slice(2); // Last 2 digits of the year
+  const month = (today.getMonth() + 1).toString().padStart(2, '0'); // Month with leading zero if necessary
+  const day = today.getDate().toString().padStart(2, '0'); // Day with leading zero if necessary
 
-  // Construct the base Agent ID without the sequence number
+  // Construct the base Agent ID (AG-YYMMDD)
   const baseId = `AG-${year}${month}${day}`;
 
-  // Find the last created agent with a matching date prefix (e.g., AG-240926)
-  const lastAgent = await Company
-    .findOne({ agentId: { $regex: `^${baseId}` } })  // Search for existing IDs with the same base
-    .sort({ agentId: -1 })  // Sort by descending order to get the last created one
-    .exec();
+  // Count the number of agents created with the same YYMMDD prefix
+  // Use the 'agId' field instead of 'agentId'
+  const count = await Company.countDocuments({ agId: { $regex: `^${baseId}` } }).exec();
 
-  let sequenceNumber = 1;  // Default sequence number if no match found
-
-  if (lastAgent) {
-    // Extract the last two digits (sequence number) from the last agentId
-    const lastId = lastAgent.agentId;
-    const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the agentId
-    
-    // Increment the sequence number for the new ID
-    sequenceNumber = lastSequence + 1;
-  }
+  // The sequence number is based on the count (0-based index + 1)
+  const sequenceNumber = count + 1;
 
   // Format the sequence number as a two-digit number
-  const sequenceStr = sequenceNumber.toString().padStart(2, '0');
+  const sequenceStr = sequenceNumber.toString().padStart(2, '0'); // Ensure it's always 2 digits
 
-  // Return the unique Agent ID (e.g., AG-24092601)
+  // Return the unique Agent ID (e.g., AG-24102101)
   return `${baseId}${sequenceStr}`;
 }
+
 //register company
 const registerCompany = asyncHandler(async (req, res) => {
     const { body: payload } = req;
@@ -78,11 +72,20 @@ const registerCompany = asyncHandler(async (req, res) => {
     }
 
     // If the company doesn't exist or belongs to a different agent, insert new data
-    const newCompany = new Company({
+    const {edit} = req.query;
+    let newCompany ;
+    if(edit){
+     newCompany = new Company({
+      companyDetails,
+      agentId: req.user.id,
+    });
+  } else {
+    newCompany = new Company({
       companyDetails,
       agentId: req.user.id,
       pageCount: 1
     });
+  }
 
     await newCompany.save();
 
@@ -124,7 +127,11 @@ const registerCompanyContact = asyncHandler(async (req, res) => {
     if (payload.admissionsContacts) {
       company.admissionsContacts = payload.admissionsContacts;
     }
-    company.pageCount = 2;
+    const {edit} = req.query;
+    if(!edit){
+      company.pageCount = 2;
+    }
+    
     // Save the updated company details
     await company.save();
   
@@ -159,7 +166,11 @@ const registerBankDetails = asyncHandler(async (req, res) => {
 
     // Update the bank details for the company
     company.bankDetails = payload;
-    company.pageCount = 3;
+    const {edit} = req.query;
+    if(!edit){
+      company.pageCount = 3;
+    }
+   
     // Save the updated company details
     await company.save();
 
@@ -191,7 +202,11 @@ const registerCompanyOverview = asyncHandler(async (req, res) => {
 
     // Update the company overview for the company
     company.companyOverview = payload;
-    company.pageCount = 4;
+    const {edit} = req.query;
+     if(!edit){
+      company.pageCount = 4;
+     }
+    
     // Save the updated company details
     await company.save();
 
@@ -223,7 +238,11 @@ const registerCompanyOperations = asyncHandler(async (req, res) => {
 
     // Update the company operations for the company
     company.companyOperations = payload;
-    company.pageCount = 5;
+    const {edit} = req.query;
+    if(!edit){
+      company.pageCount = 5;
+    }
+    
     // Save the updated company details
     await company.save();
 
@@ -247,9 +266,6 @@ const registerReferences = asyncHandler(async (req, res) => {
     return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to update references"));
   }
 
-  // Debugging: Log the user ID
-  console.log("User ID:", req.user.id);
-
   // Find the company associated with the agentId (try using _id as well)
   let company = await Company.findOne({ agentId: req.user.id });
   if (!company) {
@@ -257,17 +273,44 @@ const registerReferences = asyncHandler(async (req, res) => {
     company = await Company.findById(req.user.id);  // Try using MongoDB _id as a fallback
   }
 
-  console.log("Company:", company);
-
   if (!company) {
     return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
   }
 
-  // Update the references for the company
-  company.agId = await generateAgentId();
-  company.references = result.data;
-  company.pageCount = 6;
-  company.pageStatus.status = 'notapproved';
+
+  // Check if edit is present in the query
+  const { edit } = req.query;
+
+  if (edit) {
+    // If edit is true, update the references without sending the email
+    company.references = payload;  // Assuming the whole reference array is being replaced
+  } else {
+    // console.log("++++++>>>>>>>")
+    // console.log(await generateAgentId(), "++++++++++++" )
+    // Insert new references
+    company.references = result.data;  // Insert the validated references
+    company.pageStatus.status = 'notapproved';  // Set status to notapproved
+    company.agId = await generateAgentId();  // Generate and assign a new agentId
+    company.pageCount = 6;  // Set the page count to 6 (this is based on your logic)
+    
+    // Ensure primaryContact is present before accessing it
+  if (!company.primaryContact) {
+    return res.status(400).json(new ApiResponse(400, {}, "Primary contact details are missing in company profile"));
+  }
+
+    // Only send the email if not editing
+    const temp = agentRegistrationComplete(company.primaryContact.firstName);
+
+    if (company.primaryContact.emailUsername) {
+      await sendEmailVerification(
+        company.primaryContact.emailUsername,
+        "Registration Successful Awaiting Admin Approval",
+        temp
+      );
+    } else {
+      return res.status(400).json(new ApiResponse(400, {}, "Founder or CEO's email is missing"));
+    }
+  }
 
   // Save the updated company details
   await company.save();
@@ -278,21 +321,37 @@ const registerReferences = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, updatedCompany, "References updated successfully"));
 });
 
-  const getCompanyData = asyncHandler(async (req, res) => {
-    // Ensure the user role is 'AGENT'
-    if (req.user.role !== '2') {
-      return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
-    }
-  
-    // Find the company associated with the agentId
-    const company = await Company.findOne({ agentId: req.user.id });
-    if (!company) {
-      return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
-    }
-  
-    // Return the company data (excluding the MongoDB ObjectId)
-    return res.status(200).json(new ApiResponse(200, company, "Company data fetched successfully"));
-  });
+
+
+const getCompanyData = asyncHandler(async (req, res) => {
+  if (req.user.role !== '2') {
+    return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
+  }
+
+  const company = await Company.findOne({ agentId: req.user.id });
+  if (!company) {
+    return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
+  }
+
+  const agent = await Agent.findById(company.agentId);
+  if (!agent) {
+    return res.status(404).json(new ApiResponse(404, {}, "Agent not found"));
+  }
+
+  const agentEmail = agent.accountDetails?.founderOrCeo?.email || "N/A";
+  const agentPhone = agent.accountDetails?.founderOrCeo?.phone || "N/A";
+
+  // Combine company data with agentEmail and agentPhone
+  const responseData = {
+    ...company.toObject(), // Convert the company document to a plain object
+    agentEmail,
+    agentPhone,
+  };
+
+  // Return the combined data in the response
+  return res.status(200).json(new ApiResponse(200, responseData, "Company data fetched successfully"));
+});
+
   
    
 

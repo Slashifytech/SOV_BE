@@ -8,41 +8,34 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { studentRegistrationComplete } from "../utils/mailTemp.js";
+import { sendEmailVerification } from "../utils/sendMail.js";
 
 async function generateStudentId() {
   const today = new Date();
 
-  // Format the date components (DDMMYY)
-  const day = today.getDate().toString().padStart(2, '0');
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const year = today.getFullYear().toString().slice(2);
+  // Format the date components (YYMMDD)
+  const year = today.getFullYear().toString().slice(2); // Last 2 digits of the year
+  const month = (today.getMonth() + 1).toString().padStart(2, '0'); // Month with leading zero if necessary
+  const day = today.getDate().toString().padStart(2, '0'); // Day with leading zero if necessary
 
-  // Construct the base Student ID without the sequence number
+  // Construct the base Student ID (ST-YYMMDD)
   const baseId = `ST-${year}${month}${day}`;
 
-  // Find the last created student with a matching date prefix (e.g., ST-240926)
-  const lastStudent = await StudentInformation
-    .findOne({ studentId: { $regex: `^${baseId}` } })  // Search for existing IDs with the same base
-    .sort({ studentId: -1 })  // Sort by descending order to get the last created one
-    .exec();
+  // Count the number of students created with the same YYMMDD prefix
+  const count = await StudentInformation.countDocuments({ studentId: { $regex: `^${baseId}` } }).exec();
 
-  let sequenceNumber = 1;  // Default sequence number if no match found
-
-  if (lastStudent) {
-    // Extract the last two digits (sequence number) from the last studentId
-    const lastId = lastStudent.studentId;
-    const lastSequence = parseInt(lastId.slice(-2), 10);  // Get the last 2 digits of the studentId
-    
-    // Increment the sequence number for the new ID
-    sequenceNumber = lastSequence + 1;
-  }
+  // The sequence number is based on the count (0-based index + 1)
+  const sequenceNumber = count + 1;
 
   // Format the sequence number as a two-digit number
-  const sequenceStr = sequenceNumber.toString().padStart(2, '0');
+  const sequenceStr = sequenceNumber.toString().padStart(2, '0'); // Ensure it's always 2 digits
 
-  // Return the unique Student ID (e.g., ST-24092601)
+  // Return the unique Student ID (e.g., ST-24102101)
   return `${baseId}${sequenceStr}`;
 }
+
+
 
 
 const studentPersonalInformation = asyncHandler(async (req, res) => {
@@ -75,21 +68,36 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 
   // If email exists but is associated with another user, deny access
   if (existingRecordByEmail && existingRecordByEmail[idField]?.toString() !== req.user.id) {
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized: Email already associated with another user"));
+    return res.status(400).json(new ApiResponse(400, {}, "User already exists from this email"));
   }
 
+  const {edit} = req.query;
   // Prepare data to save or update
-  const data = {
-    personalInformation: {
-      ...personalInformation,
-      phone: { ...personalInformation.phone },
-    },
-    passportDetails: {
-      ...passportDetails,
-    },
-    [idField]: req.user.id, // Dynamically assign either studentId or agentId
-    pageCount: 1,
-  };
+  let data;
+  if(edit){
+     data = {
+      personalInformation: {
+        ...personalInformation,
+        phone: { ...personalInformation.phone },
+      },
+      passportDetails: {
+        ...passportDetails,
+      },
+      [idField]: req.user.id, // Dynamically assign either studentId or agentId
+    };
+  } else {
+     data = {
+      personalInformation: {
+        ...personalInformation,
+        phone: { ...personalInformation.phone },
+      },
+      passportDetails: {
+        ...passportDetails,
+      },
+      [idField]: req.user.id, // Dynamically assign either studentId or agentId
+      pageCount: 1,
+    };
+  }
 
   if (existingRecordByPhone) {
     // Update the existing record
@@ -108,53 +116,81 @@ const studentPersonalInformation = asyncHandler(async (req, res) => {
 });
 
 
-const studentResidenceAndAddress = asyncHandler(async (req, res) => {
-  const payload = req.body;
-  const { formId } = req.params;
+const studentResidenceAndAddress = async (req, res) => {
+    const payload = req.body;
+    const { formId } = req.params;
 
-  // Validate the payload against the Zod schema
-  const validation = studentResidenceAndMailingAddressSchema.safeParse(payload);
-  if (!validation.success) {
-    return res
-      .status(400)
-      .json(new ApiResponse(400, {}, validation.error.errors[0].message));
-  }
+    // Check if formId is provided for edit operation
+    const isEdit = req.query.edit !== undefined;
 
-  // Prepare the update object based on the validated payload
-  const updateData = {
-    residenceAddress: {
-      address: payload.residenceAddress?.address,
-      country: payload.residenceAddress?.country,
-      state: payload.residenceAddress?.state,
-      city: payload.residenceAddress?.city,
-      zipcode: payload.residenceAddress?.zipcode,
-    },
-    mailingAddress: {
-      address: payload.mailingAddress?.address,
-      country: payload.mailingAddress?.country,
-      state: payload.mailingAddress?.state,
-      city: payload.mailingAddress?.city,
-      zipcode: payload.mailingAddress?.zipcode,
-    },
-    pageCount: 2,
-  };
+    // Validate the payload against the Zod schema
+    const validation = studentResidenceAndMailingAddressSchema.safeParse(payload);
+    if (!validation.success) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, validation.error.errors[0].message));
+    }
 
-  // Update the StudentInformation document
-  const updatedStudentInfo = await StudentInformation.findOneAndUpdate(
-    { _id: formId },
-    { $set: updateData },
-    { new: true }
-  );
+    // Prepare update data
+    const updateData = {
+      residenceAddress: {
+        address: payload.residenceAddress?.address,
+        country: payload.residenceAddress?.country,
+        state: payload.residenceAddress?.state,
+        city: payload.residenceAddress?.city,
+        zipcode: payload.residenceAddress?.zipcode,
+      },
+      mailingAddress: {
+        address: payload.mailingAddress?.address,
+        country: payload.mailingAddress?.country,
+        state: payload.mailingAddress?.state,
+        city: payload.mailingAddress?.city,
+        zipcode: payload.mailingAddress?.zipcode,
+      },
+    };
 
-  // Check if the document was found and updated
-  if (!updatedStudentInfo) {
-    return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
-  }
+    // Check if a document with the provided formId already exists
+    const existingStudentInfo = await StudentInformation.findById(formId);
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, updatedStudentInfo, "Data saved successfully"));
-});
+    if (existingStudentInfo) {
+      // If we're in edit mode or if the existing document has addresses, update the document
+      const updatedStudentInfo = await StudentInformation.findByIdAndUpdate(
+        formId,
+        { $set: updateData },
+        { new: true }
+      );
+
+      // Check if the document was updated successfully
+      if (!updatedStudentInfo) {
+        return res.status(404).json(new ApiResponse(404, {}, "Student information not found"));
+      }
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, updatedStudentInfo, "Data updated successfully"));
+    } else {
+      // Create a new StudentInformation document if no existing record is found
+      const newStudentInfo = new StudentInformation({
+        ...updateData,
+        studentId: payload.studentId, // Ensure this is provided in payload
+        agentId: payload.agentId, // Ensure this is provided in payload
+        pageCount: 2, // Set initial pageCount
+        pageStatus: {
+          status: "registering", // Default status
+          message: "" // Default message
+        }
+      });
+
+      // Save the new student information
+      const savedStudentInfo = await newStudentInfo.save();
+
+      return res
+        .status(201)
+        .json(new ApiResponse(201, savedStudentInfo, "Data saved successfully"));
+    }
+  
+};
+
 
 const studentPreference = asyncHandler(async (req, res) => {
   const payload = req.body;
@@ -168,8 +204,34 @@ const studentPreference = asyncHandler(async (req, res) => {
   }
 
   const stId = await generateStudentId();
+  
 
-  await StudentInformation.findOneAndUpdate(
+  const {edit} = req.query;
+  let studentInfo;
+
+  if(edit){
+    studentInfo = await StudentInformation.findOneAndUpdate(
+      { _id: formId },
+      {
+        $set: {
+          preferences: {
+            preferredCountry: payload.preferredCountry,
+            preferredState: payload.preferredState,
+            preferredProgram: payload.preferredProgram,
+            preferredLevelOfEducation: payload.preferredLevelOfEducation,
+            preferredInstitution: payload.preferredInstitution,
+          },
+          pageStatus:{
+            status:"notapproved"
+          },
+          stId: stId
+        },
+      },
+      { new: true }
+    );
+  } else{
+
+   studentInfo = await StudentInformation.findOneAndUpdate(
     { _id: formId },
     {
       $set: {
@@ -189,6 +251,10 @@ const studentPreference = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+}
+
+  const temp = studentRegistrationComplete(studentInfo.personalInformation.firstName);
+  await sendEmailVerification(studentInfo.personalInformation.email, "Registration Successful – Awaiting Admin Approval", temp)
 
   return res
     .status(201)
@@ -256,64 +322,98 @@ const updateStudentPersonalInformation = asyncHandler(async (req, res) => {
 });
 
 const getAllAgentStudent = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, email, stId, firstName, lastName, phone } = req.query; // Add filterable fields
+  const { page = 1, limit = 10, searchData } = req.query; // Extract pagination and search parameters
   const agentId = req.user.id;
 
   // Check if the user role is authorized
   if (req.user.role !== '2') {
-    return res
-      .status(403) // 403 Forbidden for unauthorized access
-      .json(new ApiResponse(403, {}, "Unauthorized access: Only agents can fetch student data"));
+    return res.status(403).json(
+      new ApiResponse(403, {}, "Unauthorized access: Only agents can fetch student data")
+    );
   }
 
-  // Build the query object dynamically based on the provided filters
-  const query = { agentId };
+  // Initialize query and matchQuery objects with agentId and non-deleted students
+  const query = { agentId, deleted: false }; 
+  const matchQuery = { agentId, deleted: false };
 
-  if (email) {
-    query['personalInformation.email'] = email;
-  }
-  if (stId) {
-    query.stId = stId;
-  }
-  if (firstName) {
-    query['personalInformation.firstName'] = firstName;
-  }
-  if (lastName) {
-    query['personalInformation.lastName'] = lastName;
-  }
-  if (phone) {
-    query['personalInformation.phone.phone'] = phone; // Match phone number
+  // Dynamic search query construction
+  if (searchData) {
+    const regex = new RegExp(searchData, 'i');
+    query.$or = [
+      { 'personalInformation.email': regex },
+      { 'stId': regex },
+      { 'personalInformation.firstName': regex },
+      { 'personalInformation.lastName': regex },
+      { 'personalInformation.phone.phone': regex }
+    ];
   }
 
-  // Fetch all students where agentId matches req.user.id and apply filters with pagination
-  const allStudents = await StudentInformation.find(query)
-    .select("-__v") // Exclude the version field
-    .limit(parseInt(limit)) // Limit the number of results per page
-    .skip((parseInt(page) - 1) * parseInt(limit)); // Skip results for pagination
+  // Add specific filters if provided
+  const filters = ['email', 'stId', 'firstName', 'lastName', 'phone'];
+  filters.forEach(filter => {
+    if (req.query[filter]) {
+      query[`personalInformation.${filter}`] = req.query[filter];
+      matchQuery[`personalInformation.${filter}`] = req.query[filter];
+    }
+  });
 
-  // Get the total count of students matching the query
-  const totalStudents = await StudentInformation.countDocuments(query);
+  // Fetch students with aggregation
+  const allStudents = await StudentInformation.aggregate([
+    { $match: matchQuery }, // Match query for agentId and non-deleted students
+    {
+      $lookup: {
+        from: 'institutions',
+        localField: '_id',
+        foreignField: 'studentInformationId',
+        as: 'applications'
+      }
+    },
+    {
+      $addFields: {
+        applicationCount: { $size: "$applications" }
+      }
+    },
+    {
+      $facet: {
+        totalCount: [{ $count: "count" }],
+        data: [
+          { $skip: (page - 1) * limit },
+          { $limit: parseInt(limit) }
+        ]
+      }
+    }
+  ]);
+
+  const totalRecords = allStudents[0]?.totalCount[0]?.count || 0;
+  const students = allStudents[0]?.data || [];
+
+  // Pagination logic
+  const totalPages = Math.ceil(totalRecords / limit);
+  const currentPage = parseInt(page);
+  const prevPage = currentPage > 1 ? currentPage - 1 : null;
+  const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
 
   // Check if any students exist for this agent
-  if (!allStudents.length) {
-    return res
-      .status(404)
-      .json(new ApiResponse(404, {}, "No students found for this agent"));
+  if (!students.length) {
+    return res.status(404).json(new ApiResponse(404, {}, "No students found for this agent"));
   }
 
-  // Prepare pagination data
-  const pagination = {
-    currentPage: parseInt(page),
-    totalPages: Math.ceil(totalStudents / limit),
-    pageSize: parseInt(limit),
-    totalItems: totalStudents,
-  };
-
-  // Respond with paginated results
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { students: allStudents, pagination }, "Students fetched successfully"));
+  res.status(200).json(new ApiResponse(200, {
+    totalRecords,
+    totalPages,
+    currentPage,
+    prevPage,
+    nextPage,
+    hasPreviousPage,
+    hasNextPage,
+    students
+  }, "Students fetched successfully"));
 });
+
+
+
 
 
 const getStudentFormById = asyncHandler(async (req, res) => {
@@ -335,6 +435,21 @@ const getStudentFormById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, studentInformation, "Student information retrieved successfully"));
 });
 
+const deleteStudentInformation = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const studentInfo = await StudentInformation.findById(id);
+  if (!studentInfo) {
+      return res.status(404).json(new ApiResponse(404, {}, 'Student information not found.'));
+  }
+
+  studentInfo.deleted = true;
+
+  await studentInfo.save();
+
+  return res.status(200).json(new ApiResponse(200, studentInfo, 'Student information marked as deleted.'));
+});
+
 
 
 export {
@@ -346,5 +461,6 @@ export {
   // getAllStudents,
   updateStudentPersonalInformation,
   getAllAgentStudent,
-  getStudentFormById
+  getStudentFormById,
+  deleteStudentInformation
 };

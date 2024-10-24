@@ -25,16 +25,16 @@ const EducationDetailsSchema = new Schema({
         required: true 
     },
     markSheet10: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String,  
     },
     markSheet12: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String, 
     },
     markSheetUnderGraduate: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String,  
     },
     markSheetPostGraduate: { 
-        type: String,  // Array of strings to store multiple URLs or file paths
+        type: String,  
     },
 });
 
@@ -44,6 +44,10 @@ const PreferencesSchema = new Schema({
     institution: { type: String, required: true },
     course: { type: String, required: true },
     intake: { type: String, required: true },
+    offerLetterPrice:{
+        type: String,
+        default: "$50"
+     }, 
 });
 
 // Schema for IELTS Score
@@ -72,7 +76,7 @@ const PTESchema = new Schema({
     reading: { type: Number, required: false },
     writing: { type: Number, required: false },
     speaking: { type: Number, required: false },
-    overallBands: { type: Number, required: false },
+    overallBand: { type: Number, required: false },
 }, { _id: false });  // Set _id to false if you don't want separate IDs for embedded sub-documents
 
 // Schema for TOEFL Scores
@@ -81,7 +85,7 @@ const TOEFLSchema = new Schema({
     reading: { type: Number, required: false },
     writing: { type: Number, required: false },
     speaking: { type: Number, required: false },
-    overallBands: { type: Number, required: false },
+    overallBand: { type: Number, required: false },
 }, { _id: false });
 
 // Schema for Document Upload
@@ -138,13 +142,14 @@ const InstitutionSchema = new Schema({
         certificate: CertificateUploadSchema,
         type:{
             type: String,
-            default: "Offer Letter"
+            default: "offerLetter"
         },
         status: {
             type: String,
-            enum: ['underreview', 'completed', 'reject', 'pending', 'approved'],  // Valid status values
+            enum: ['underreview', , 'rejected', 'approved'],  // Valid status values
              default: 'underreview'
         },
+       
         message: { type: String }  // Optional message field
     },
     gic: { 
@@ -156,7 +161,7 @@ const InstitutionSchema = new Schema({
         },
         status: {
             type: String,
-            enum: ['underreview', 'completed', 'reject', 'pending', 'approved'],  // Valid status values
+            enum: ['underreview', , 'rejected', 'approved'],  // Valid status values
             default: 'underreview'
         },
         message: { type: String }  // Optional message field

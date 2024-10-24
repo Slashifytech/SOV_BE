@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Student } from "../models/student.model.js";
 import { Agent } from "../models/agent.model.js";
+import { Admin } from "../models/admin.model.js";
 
 const verifyJwt = asyncHandler(async (req, res, next) => {
   try {
@@ -56,19 +57,22 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
         .status(401)
         .json(new ApiResponse(401, {}, "Unauthorized request"));
     }
-
+     
     const decodeToken = await jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET
     );
+
+    // console.log()
+    
     let user;
-    if (decodeToken.role === "admin") {
-      user = await Agent.findById(decodeToken.id).select(
-        "-password -refreshToken"
+    if (decodeToken.role === "0") {
+      user = await Admin.findById(decodeToken.id).select(
+        "-password "
       );
     }
 
-    if (user.role !== "ADMIN") {
+    if (user.role !== "0") {
       return res
         .status(401)
         .json(new ApiResponse(401, {}, "Unauthorized user"));
@@ -79,7 +83,7 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
         .status(401)
         .json(new ApiResponse(401, {}, "Invalid accessToken"));
     }
-
+   
     req.user = user;
     next();
   } catch (error) {

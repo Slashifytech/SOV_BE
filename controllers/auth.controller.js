@@ -14,11 +14,12 @@ import {
 } from "../validators/auth.validator.js";
 import { generateTokens } from "../utils/genrateToken.js";
 import { generateOtp } from "../utils/commonFuntions.js";
-import { sendAuthData, sendEmailVerification } from "../utils/sendMail.js";
+import { sendAccountCredentials, sendAuthData, sendEmail, sendEmailVerification } from "../utils/sendMail.js";
 import { TempStudent } from "../models/tempStudent.model.js";
 import { TempAgent } from "../models/tempAgent.model.js";
 import crypto from 'crypto'; // Import crypto for generating a unique token
 import { Student } from "../models/student.model.js";
+import { agentAccountCredentials, agentSignUpTemp, studentAccountCredentials, studentSignUpTemp } from "../utils/mailTemp.js";
 
 
 
@@ -47,8 +48,9 @@ const sentStudentOtp = asyncHandler(async (req, res) => {
 
   // Generate OTP and send it to the user's email
   const OTP = generateOtp();
-  await sendEmailVerification(payload.email, OTP);
-
+  const temp = studentSignUpTemp(payload.firstName, OTP)
+  // await sendEmailVerification(payload.email," Verify Your Account with OTP", temp);
+  await sendEmail({to:payload.email, subject:"Verify Your Account with OTP", htmlContent:temp })
   // Save the user data and OTP temporarily for verification
   const tempStudent = await TempStudent.create({
     firstName: payload.firstName,
@@ -77,28 +79,38 @@ const verifyStudentOtp = asyncHandler(async (req, res) => {
   // Validate the payload using Zod schema
   const validation = verifyOtpSchema.safeParse(payload);
   if (!validation.success) {
-    return res
-      .status(400)
-      .json(new ApiResponse(400, {}, validation.error.errors));
+    return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
   }
 
+  // Normalize the email before querying
+  const email = payload.email.toLowerCase().trim();
+  console.log(email)
+
   // Find the temporary student record
+
   const tempStudent = await TempStudent.findOne({ email: payload.email });
+
 
   if (!tempStudent) {
     return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
   }
 
   // Check if OTP is correct and not expired
-
   const isOtpValid = await tempStudent.isOtpCorrect(payload.otp);
   if (!isOtpValid || tempStudent.otpExpiry < Date.now()) {
     return res.status(400).json(new ApiResponse(400, {}, "Invalid or expired OTP"));
   }
 
-  await sendAuthData(payload.email, payload.password);
+  const temp = studentAccountCredentials(tempStudent.firstName, payload.email, payload.password);
 
-  // Once OTP is verified, create a new student in the Student collection
+  // Send email with account credentials
+  await sendEmail({
+    to: payload.email,
+    subject: "Welcome to Sov Portal Your Student Account is Ready!",
+    htmlContent: temp,
+  });
+
+  // Create a new student in the Student collection
   const newStudent = await Student.create({
     firstName: tempStudent.firstName,
     lastName: tempStudent.lastName,
@@ -113,9 +125,7 @@ const verifyStudentOtp = asyncHandler(async (req, res) => {
   // Remove the temp student record
   await TempStudent.deleteOne({ email: payload.email });
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, { email: newStudent.email }, "Student registered successfully"));
+  return res.status(201).json(new ApiResponse(201, { email: newStudent.email }, "Student registered successfully"));
 });
 
 const sendAgentOtp = asyncHandler(async (req, res) => {
@@ -140,7 +150,10 @@ const sendAgentOtp = asyncHandler(async (req, res) => {
 
   // Generate OTP and send it to the user's email
   const OTP = generateOtp();
-  await sendEmailVerification(payload.accountDetails.founderOrCeo.email, OTP);
+  
+  const temp = agentSignUpTemp(payload.accountDetails.primaryContactPerson.name, OTP)
+  // await sendEmailVerification(payload.accountDetails.founderOrCeo.email,"Verify Your Account with OTP", emailTemp);
+  await sendEmail({to:payload.accountDetails.founderOrCeo.email, subject:"Verify Your Account with OTP", htmlContent:temp })
 
   // Save the agent data and OTP temporarily for verification
   const tempAgent = await TempAgent.create({
@@ -184,8 +197,10 @@ const verifyAgentOtp = asyncHandler(async (req, res) => {
     accountDetails: tempAgent.accountDetails,
     password: tempAgent.password,
   };
-
-  await sendAuthData(payload.email, payload.password);
+       
+  const temp = agentAccountCredentials(tempAgent.accountDetails.primaryContactPerson.name,payload.email, payload.password )
+  //  await sendAccountCredentials(payload.email, "Welcome to Sov Portal – Your Agent Account is Ready!", temp);
+   await sendEmail({to:payload.email, subject:"Welcome to Sov Portal – Your Agent Account is Ready!", htmlContent:temp })
 
   const agent = new Agent(agentData);
   await agent.save();
@@ -208,19 +223,17 @@ const login = asyncHandler(async (req, res) => {
 
   let user;
   let loggedInUser;
+   
+  
 
   if (payload.role === "3") {
-    console.log("Payload email:", payload.email.trim().toLowerCase());
-    
-    // Query user by email (ensure email is trimmed and lowercased)
+
     user = await Student.findOne({ email: payload.email.trim().toLowerCase() });
-    console.log("Queried user:", user);
     
     if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
 
-    // Check if the password is correct
     const isPasswordValid = await user.isPasswordCorrect(payload.password);
     if (!isPasswordValid) {
       return res.status(400).json(new ApiResponse(400, {}, "Invalid password"));
@@ -228,7 +241,7 @@ const login = asyncHandler(async (req, res) => {
 
     loggedInUser = await Student.findById(user._id).select("-password -refreshToken");
 
-  } else if (payload.role === "2") {
+  } else if (payload.role === "2" || payload.role === '0') {
     user = await Agent.findOne({ "accountDetails.founderOrCeo.email": payload.email });
     
     if (!user) {
@@ -292,6 +305,7 @@ const logout = asyncHandler(async (req, res) => {
 const changePassword = asyncHandler(async (req, res) => {
   const payload = req.body;
   const validation = changePasswordSchema.safeParse(payload);
+
   if (!validation.success) {
     return res
       .status(400)
@@ -299,9 +313,17 @@ const changePassword = asyncHandler(async (req, res) => {
   }
   let user;
   if(req.user.role === '3'){
+
     user = await Student.findOne({ _id: req.user.id });
     if (!user || !user.approved ) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+    }
+
+    const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+    if(!isPasswordValid){
+      return res.status(400).json(
+        new ApiResponse(400, {}, "Invalid password")
+      )
     }
     const hashPassword = await bcrypt.hash(payload.newPassword, 10);
   await Student.findOneAndUpdate(
@@ -319,6 +341,14 @@ const changePassword = asyncHandler(async (req, res) => {
     if (!user || !user.approved) {
       return res.status(404).json(new ApiResponse(404, {}, "User not found"));
     }
+     
+    const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+  if(!isPasswordValid){
+    return res.status(400).json(
+      new ApiResponse(400, {}, "Invalid password")
+    )
+  }
+
     const hashPassword = await bcrypt.hash(payload.newPassword, 10);
   await Agent.findOneAndUpdate(
     { _id: req.user.id },
@@ -334,14 +364,7 @@ const changePassword = asyncHandler(async (req, res) => {
       new ApiResponse(400, {}, "Invalid user type ")
     )
   }
-  const isPasswordValid = await bcrypt.compare(payload.password, user.password);
-  if(!isPasswordValid){
-    return res.status(400).json(
-      new ApiResponse(400, {}, "Invalid password")
-    )
-  }
   
-
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "password updated successfully"));
@@ -530,7 +553,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   // Find the temporary user (Agent/Student) by email
   const tempUser = await tempModel.findOne(emailQuery);
-  console.log(tempUser, "++++++++++++++++++++++++")
+ 
   if (!tempUser) {
     return res
       .status(404)
@@ -647,8 +670,8 @@ const requestChangeEmail = asyncHandler(async (req, res) => {
     return res.status(400).json(new ApiResponse(400, {}, validation.error.errors));
   }
 
-  const userId = req.user.id; // Assuming you have user ID from authenticated user
-  const userRole = req.user.role; // Assuming role is part of the user object
+  const userId = req.user.id; 
+  const userRole = req.user.role; 
 
   // Determine if the user is an agent or a student
   let user;

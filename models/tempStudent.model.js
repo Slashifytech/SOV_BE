@@ -27,7 +27,6 @@ const tempStudentSchema = new Schema(
     email: {
       type: String,
       unique: true,
-      trim: true,
     },
     country: {
       type: String,

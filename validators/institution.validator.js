@@ -18,7 +18,7 @@ const PersonalInformationSchema = z.object({
 
 // Zod schema for Education Details
 const EducationDetailsSchema = z.object({
-  educationLevel: z.enum(['Diploma', 'Post Graduate', 'Under Graduate']),  // Ensures only the allowed values are used
+  educationLevel: z.enum(['diploma', 'underGraduate', 'postGraduate', "diplomaPG", "certificationCourse"]),  // Ensures only the allowed values are used
   markSheet10: z.string().optional(), // Optional string for 10th marksheet
   markSheet12: z.string().optional(), // Optional string for 12th marksheet
   markSheetUnderGraduate: z.string().optional(), // Optional string for undergraduate marksheet
@@ -33,13 +33,12 @@ const PreferencesSchema = z.object({
   intake: z.string().nonempty("Intake is required"),
 });
 
-// Zod schema for IELTS Score
 const IELTSSchema = z.object({
-  reading: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  speaking: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  writing: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  listening: z.number().min(0, "Minimum score is 0").max(9, "Maximum score is 9"),
-  overallBand: z.number().optional(),  // Optional overall band score
+  reading: z.number().optional(),
+  speaking: z.number().optional(),
+  writing: z.number().optional(),
+  listening: z.number().optional(),
+  overallBand: z.number().optional(),  // Already optional
 });
 
 // Zod schema for PTE Score
@@ -48,21 +47,21 @@ const PTESchema = z.object({
   reading: z.number().optional(),
   writing: z.number().optional(),
   speaking: z.number().optional(),
-  overallBands: z.number().optional(),
+  overallBand: z.number().optional(),
 });
 
-// Zod schema for TOEFL Score
+// Zod schema for TOEFL intakeScore
 const TOEFLSchema = z.object({
   listening: z.number().optional(),
   reading: z.number().optional(),
   writing: z.number().optional(),
   speaking: z.number().optional(),
-  overallBands: z.number().optional(),
+  overallBand: z.number().optional(),
 });
 
 // Zod schema for Document Upload
 const CertificateUploadSchema = z.object({
-  url: z.string().url("Invalid URL").optional(),
+  url: z.array(z.string()),
 });
 
 // Zod schema for the Offer Letter section

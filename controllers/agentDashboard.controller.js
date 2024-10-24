@@ -11,74 +11,81 @@ export const getTotalStudentCount = asyncHandler(async (req, res) => {
       return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view student information"));
     }
   
-    // Optional year filter from query parameters
-    const { year } = req.query;
+    // Calculate the date 7 days ago from today
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-    let dateFilter = {};
-    
-    if (year) {
-      // If year is provided, set date range for that year (start of the year to end of the year)
-      const startOfYear = new Date(`${year}-01-01T00:00:00Z`);
-      const endOfYear = new Date(`${year}-12-31T23:59:59Z`);
-      dateFilter.createdAt = { $gte: startOfYear, $lte: endOfYear };
-    } else {
-      // Calculate the date 7 days ago if no year is provided
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      dateFilter.createdAt = { $gte: sevenDaysAgo };
-    }
+    // Calculate the date range 7 days before the last 7 days (for the previous week's count)
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-    // Get total student records for the agent
+    // Count student records for the last 7 days
+    const insertedRecords = await StudentInformation.countDocuments({
+      agentId: req.user.id,
+      createdAt: { $gte: sevenDaysAgo }
+    });
+  
+    // Count student records for the previous 7 days (from 14 days ago to 7 days ago)
+    const previousRecordCount = await StudentInformation.countDocuments({
+      agentId: req.user.id,
+      createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }
+    });
+  
+    // Calculate the percentage increase relative to the previous period
+    const percentageIncrease = previousRecordCount > 0
+      ? (((insertedRecords - previousRecordCount) / previousRecordCount) * 100).toFixed(2)
+      : (insertedRecords > 0 ? 100 : 0); // If no previous records, it's 100% increase if new records exist
+  
+    // Count the total student records for the agent from the beginning to the current date
     const totalRecords = await StudentInformation.countDocuments({
       agentId: req.user.id
     });
   
-    // Get student records inserted in the last 7 days or the specified year
-    const insertedRecords = await StudentInformation.countDocuments({
-      agentId: req.user.id,
-      ...dateFilter
-    });
-  
-    // Calculate the percentage increase in the last 7 days or the specified year
-    const insertionPercentage = totalRecords > 0 
-      ? ((insertedRecords / totalRecords) * 100).toFixed(2) 
-      : 0;
-  
-    // Return the total count and the percentage of recent additions
-    return res.status(200).json(new ApiResponse(200, { 
-      totalRecords, 
-      insertedRecords, 
-      insertionPercentage 
-    }, `Percentage of students added ${year ? `in the year ${year}` : 'in the last 7 days'} fetched successfully`));
+    // Return only total student count and percentage increase
+    return res.status(200).json(new ApiResponse(200, {
+      totalRecords,
+      percentageIncrease
+    }, "Total student count and percentage increase fetched successfully"));
   });
-
-
+  
+  
   export const getTotalApplicationCount = asyncHandler(async (req, res) => {
-    // Ensure the user is authorized (assuming role 'user' is role '2' for agents)
+    // Ensure the user is authorized (assuming role '2' is for agents)
     if (req.user.role !== '2') {
         return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view this information"));
     }
 
-    // Optional year filter from query parameters
     const { year } = req.query;
-
     let dateFilter = {};
+    let previousPeriodFilter = {};
 
     if (year) {
-        // If year is provided, set date range for that year (start of the year to end of the year)
+        // If a year is provided, calculate the date range for that year
         const startOfYear = new Date(`${year}-01-01T00:00:00Z`);
         const endOfYear = new Date(`${year}-12-31T23:59:59Z`);
         dateFilter.createdAt = { $gte: startOfYear, $lte: endOfYear };
+
+        // Filter for records before the start of the year
+        previousPeriodFilter.createdAt = { $lt: startOfYear };
     } else {
-        // Calculate the date 7 days ago if no year is provided
+        // Calculate the date 7 days ago
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Calculate the date range 7 days before the last 7 days (for previous period count)
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Filter for records in the last 7 days
         dateFilter.createdAt = { $gte: sevenDaysAgo };
+
+        // Filter for records before the last 7 days
+        previousPeriodFilter.createdAt = { $gte: fourteenDaysAgo, $lt: sevenDaysAgo };
     }
 
     // Query to get the total count of applications for the logged-in user (agent)
     const totalRecords = await Institution.countDocuments({
-        userId: req.user.id,
+        userId: req.user.id
     });
 
     // Query to get the count of applications inserted in the last 7 days or the specified year
@@ -87,17 +94,26 @@ export const getTotalStudentCount = asyncHandler(async (req, res) => {
         ...dateFilter,
     });
 
-    // Calculate the percentage increase in the last 7 days or the specified year
-    const insertionPercentage = totalRecords > 0
-        ? ((insertedRecords / totalRecords) * 100).toFixed(2)
-        : 0;
+    // Query to get the count of records before the last 7 days or the specified year
+    const previousRecordCount = await Institution.countDocuments({
+        userId: req.user.id,
+        ...previousPeriodFilter,
+    });
 
-    // Return the total count and the percentage of recent additions
+    // Calculate the percentage increase (if previousRecordCount > 0)
+    let percentageIncrease = 0;
+    if (previousRecordCount > 0) {
+        percentageIncrease = (((insertedRecords - previousRecordCount) / previousRecordCount) * 100).toFixed(2);
+    } else if (insertedRecords > 0) {
+        // If there were no records previously, but new records are added, the increase is 100%
+        percentageIncrease = 100;
+    }
+
+    // Return the total count and the percentage increase
     return res.status(200).json(new ApiResponse(200, {
         totalRecords,
-        insertedRecords,
-        insertionPercentage
-    }, `Percentage of applications added ${year ? `in the year ${year}` : 'in the last 7 days'} fetched successfully`));
+        percentageIncrease
+    }, `Total applications count and percentage increase fetched successfully`));
 });
 
 
@@ -111,38 +127,70 @@ export const getTotalUnderReviewCount = asyncHandler(async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Calculate the date range for 14 days ago
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     // Query to get the total count of "under review" applications for the logged-in user (agent)
-    // We need to check both `offerLetter.status` and `gic.status` for "under review"
     const totalUnderReview = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'underreview' },
-            { 'gic.status': 'underreview' }
+            { 
+                'offerLetter.status': 'underreview',
+                'offerLetter.personalInformation': { $exists: true } // Check if offerLetter has data
+            },
+            { 
+                'gic.status': 'underreview',
+                'gic.personalDetails': { $exists: true } // Check if gic has data
+            }
         ]
     });
 
-    // Query to get the count of "under review" applications inserted in the last 7 days
+    // Query to get the count of "under review" applications in the last 7 days
     const recentUnderReview = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'underreview' },
-            { 'gic.status': 'underreview' }
+            { 
+                'offerLetter.status': 'underreview',
+                'offerLetter.personalInformation': { $exists: true } // Check if offerLetter has data
+            },
+            { 
+                'gic.status': 'underreview',
+                'gic.personalDetails': { $exists: true } // Check if gic has data
+            }
         ],
         createdAt: { $gte: sevenDaysAgo }
     });
 
-    // Calculate the percentage of "under review" applications in the last 7 days
-    const underReviewPercentage = totalUnderReview > 0 
-        ? ((recentUnderReview / totalUnderReview) * 100).toFixed(2) 
-        : 0;
+    // Query to get the count of "under review" applications from 14 days ago to 7 days ago (previous period)
+    const previousUnderReview = await Institution.countDocuments({
+        userId: req.user.id,
+        $or: [
+            { 
+                'offerLetter.status': 'underreview',
+                'offerLetter.personalInformation': { $exists: true } // Check if offerLetter has data
+            },
+            { 
+                'gic.status': 'underreview',
+                'gic.personalDetails': { $exists: true } // Check if gic has data
+            }
+        ],
+        createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }
+    });
 
-    // Return the total "under review" count and the percentage of recent additions
+    // Calculate the percentage increase
+    const underReviewPercentage = previousUnderReview > 0
+        ? (((recentUnderReview - previousUnderReview) / previousUnderReview) * 100).toFixed(2)
+        : recentUnderReview > 0 ? 100 : 0; // 100% increase if new entries exist and no previous data
+
+    // Return the total "under review" count and the percentage increase
     return res.status(200).json(new ApiResponse(200, {
         totalUnderReview,
-        recentUnderReview,
-        underReviewPercentage,
-    }, `Percentage of under review applications in the last 7 days fetched successfully`));
+        underReviewPercentage
+    }, `Total under review applications and percentage increase fetched successfully`));
 });
+
+
 
 
 export const getTotalCompletedCount = asyncHandler(async (req, res) => {
@@ -155,37 +203,97 @@ export const getTotalCompletedCount = asyncHandler(async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Calculate the date range for previous period (14 days ago to 7 days ago)
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     // Query to get the total count of "completed" applications for the logged-in user (agent)
-    // We need to check both `offerLetter.status` and `gic.status` for "completed"
     const totalCompleted = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'completed' },  // Assuming 'success' indicates completion
-            { 'gic.status': 'completed' }
+            { 'offerLetter.status': 'approved' },  
+            { 'gic.status': 'approved' }
         ]
     });
 
-    // Query to get the count of "completed" applications inserted in the last 7 days
+    // Query to get the count of "completed" applications in the last 7 days
     const recentCompleted = await Institution.countDocuments({
         userId: req.user.id,
         $or: [
-            { 'offerLetter.status': 'completed' },
-            { 'gic.status': 'completed' }
+            { 'offerLetter.status': 'approved' },
+            { 'gic.status': 'approved' }
         ],
         createdAt: { $gte: sevenDaysAgo }
     });
 
-    // Calculate the percentage of "completed" applications in the last 7 days
-    const completedPercentage = totalCompleted > 0 
-        ? ((recentCompleted / totalCompleted) * 100).toFixed(2) 
-        : 0;
+    // Query to get the count of "completed" applications from 14 days ago to 7 days ago (previous period)
+    const pastCompleted = await Institution.countDocuments({
+        userId: req.user.id,
+        $or: [
+            { 'offerLetter.status': 'approved' },
+            { 'gic.status': 'approved' }
+        ],
+        createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }
+    });
 
-    // Return the total "completed" count and the percentage of recent additions
+    // Calculate the percentage increase in "completed" applications
+    const increasePercentage = pastCompleted > 0
+        ? (((recentCompleted - pastCompleted) / pastCompleted) * 100).toFixed(2)
+        : recentCompleted > 0 ? 100 : 0; // If no past data and new entries exist, set to 100%
+
+    // Return the total "completed" count and the increase percentage
     return res.status(200).json(new ApiResponse(200, {
         totalCompleted,
-        recentCompleted,
-        completedPercentage,
-    }, `Percentage of completed applications in the last 7 days fetched successfully`));
+        increasePercentage,
+    }, `Total completed applications and percentage increase fetched successfully`));
 });
+
+export const getTotalApplicationOverview = asyncHandler(async(req, res)=>{
+
+if (req.user.role !== '2') {
+        return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view this information"));
+    }
+
+    const { type, year, month } = req.query;
+
+    // Construct filter for the query
+    const match = {
+        userId: req.user.id,
+        // Filtering by application type
+        ...(type && type !== 'all' ? { [`${type}.status`]: { $exists: true } } : {}),
+    };
+
+    // If year and month are provided, set date range
+    if (year && month) {
+        const startDate = new Date(`${year}-${month}-01T00:00:00Z`);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 1); // Move to the first day of the next month
+
+        match.createdAt = { $gte: startDate, $lt: endDate };
+    }
+
+    // Count the total number of applications
+    const totalApplications = await Institution.countDocuments(match);
+
+    // Count offer letters
+    const offerLetterCount = await Institution.countDocuments({
+        ...match,
+        'offerLetter.status': { $exists: true }
+    });
+
+    // Count GIC applications
+    const gicCount = await Institution.countDocuments({
+        ...match,
+        'gic.status': { $exists: true }
+    });
+
+    // Return the counts in the response
+    return res.status(200).json(new ApiResponse(200, {
+        totalApplications,
+        offerLetterCount,
+        gicCount
+    }, 'Application counts fetched successfully'));
+});
+
   
 
