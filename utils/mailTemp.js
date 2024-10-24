@@ -211,7 +211,7 @@ export const agentOfferLetterRejected = (agentFirstName, collegeName, country, c
 <p><strong>Student Details:</strong></p>
 <ul>
   <li><strong>Student ID:</strong> ${studentId}</li>
-  <li><strong>Student Name:</strong> ${studentName}</li>
+  <li><strong>Student Name:</strong> </li>
   <li><strong>College Name:</strong> ${collegeName}</li>
   <li><strong>Course Name:</strong> ${courseName}</li>
   <li><strong>Country:</strong> ${countryName}</li>
