@@ -191,7 +191,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         console.log(userId)
       const findAgent = await Company.findOne({ agentId: userId });
       const findStudent = await StudentInformation.findOne({ studentId: userId });
-      // console.log(findAgent., "aaaaa>>>>");
+      // console.log(findAgent.agId, "aaaaa>>>>");
 
       // Determine the customUserId
       result.customUserId = findAgent
