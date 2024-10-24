@@ -125,13 +125,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
 
   // Filtering by status
   if (req.query.status) {
-    const validStatuses = [
-      "underreview",
-      "completed",
-      "reject",
-      "pending",
-      "approved",
-    ];
+    const validStatuses = ["underreview", "completed", "reject", "pending", "approved"];
     if (validStatuses.includes(req.query.status)) {
       query.$or = [
         { "offerLetter.status": req.query.status },
@@ -188,10 +182,15 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         userId,
         userType,
         institutionId: app._id, // Include institution._id
+        applicationId: app.applicationId, // Add applicationId
+        status: null, // Placeholder for status
+        message: null, // Placeholder for message
+        agentFirstName: null, // Placeholder for agent's first name
+        agentLastName: null, // Placeholder for agent's last name
       };
 
-      const findAgent = await Company.findOne({ _id: userId, pageCount: 6 });
-      const findStudent = await StudentInformation.findOne({ _id: userId, pageCount: 3 });
+      const findAgent = await Company.findOne({ _id: userId });
+      const findStudent = await StudentInformation.findOne({ _id: userId });
 
       // Determine the customUserId
       result.customUserId = findAgent
@@ -200,15 +199,25 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         ? findStudent.stId
         : null;
 
+      // Extract agent's firstName and lastName if found
+      if (findAgent && findAgent.primaryContact) {
+        result.agentFirstName = findAgent.primaryContact.firstName;
+        result.agentLastName = findAgent.primaryContact.lastName;
+      }
+
       // Check if offerLetter has personalInformation
       if (app.offerLetter && app.offerLetter.personalInformation) {
         result.fullName = app.offerLetter.personalInformation.fullName;
         result.type = "offerLetter"; // Set type to offerLetter
+        result.status = app.offerLetter.status; // Add offerLetter status
+        result.message = app.offerLetter.message; // Add offerLetter message
       }
       // Check if gic has personalDetails
       else if (app.gic && app.gic.personalDetails) {
         result.fullName = app.gic.personalDetails.fullName;
         result.type = "gic"; // Set type to gic
+        result.status = app.gic.status; // Add gic status
+        result.message = app.gic.message; // Add gic message
       }
 
       return result.fullName ? result : null; // Return result if fullName exists, else null
@@ -235,6 +244,8 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     applications: filteredApplications,
   });
 });
+
+
 
 
 const changeApplicationStatus = asyncHandler(async (req, res) => {
