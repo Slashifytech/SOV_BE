@@ -76,7 +76,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
   const query = {};
   const orConditions = [];
 
-  // Filtering logic (unchanged)
+  // Filtering logic
   if (req.query.applicationId) {
     query.applicationId = req.query.applicationId;
   }
@@ -110,48 +110,38 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     };
   }
 
+  // Add filter for type (offerLetter or gic)
+  if (req.query.type) {
+    const validTypes = ["offerLetter", "gic"];
+    if (!validTypes.includes(req.query.type)) {
+      return res.status(400).json(new ApiResponse(400, {}, "Invalid type filter provided."));
+    }
+    query[`${req.query.type}`] = { $exists: true };
+  }
+
+  // Filter by status in both offerLetter and gic
   if (req.query.status) {
-    const validStatuses = [
-      "underreview",
-      "completed",
-      "reject",
-      "pending",
-      "approved",
-    ];
+    const validStatuses = ["underreview", "completed", "rejected", "approved"];
     if (!validStatuses.includes(req.query.status)) {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, {}, "Invalid status filter provided."));
+      return res.status(400).json(new ApiResponse(400, {}, "Invalid status filter provided."));
     }
     query.$or = [
       { "offerLetter.status": req.query.status },
-      { "gic.status": req.query.status },
+      { "gic.status": req.query.status }
     ];
   }
 
-  if (req.query.filterType) {
-    const filterType = req.query.filterType.toLowerCase();
-    if (filterType === "offerletter") {
-      query["offerLetter"] = { $exists: true };
-    } else if (filterType === "gic") {
-      query["gic"] = { $exists: true };
-    } else if (filterType !== "all") {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, {}, "Invalid filter type provided."));
-    }
-  }
-
+  // Apply orConditions for search queries (name, phone, etc.)
   if (orConditions.length > 0) {
     query.$or = orConditions;
   }
 
   // Fetch paginated applications with applied filters
   const applications = await Institution.find(query)
-    .select("-__v") // Exclude __v field
+    .select("-__v")  // Exclude __v field
     .skip(skip)
     .limit(limit)
-    .lean(); // Use lean() to improve performance by returning plain JavaScript objects
+    .lean();
 
   const totalApplications = await Institution.countDocuments(query);
 
@@ -170,15 +160,9 @@ export const getAllApplications = asyncHandler(async (req, res) => {
       agentName: null,
     };
 
-    console.log(userId, "+++");
-
-    // Fetch agent or student data and avoid redundant queries
+    // Fetch agent or student data
     const findAgent = await Company.findOne({ agentId: userId }).lean();
-    const findStudent =
-      !findAgent &&
-      (await StudentInformation.findOne({ studentId: userId }).lean());
-
-    // console.log(findAgent, "------")
+    const findStudent = !findAgent && await StudentInformation.findOne({ studentId: userId }).lean();
 
     result.customUserId = findAgent
       ? findAgent.agId
@@ -186,14 +170,10 @@ export const getAllApplications = asyncHandler(async (req, res) => {
       ? findStudent.stId
       : null;
 
-    // Fetch agent details only if an agent is found
     if (findAgent) {
-      // Use the agentId from findAgent, not userId
       const agentData = await Agent.findById(userId.toString());
-      console.log(agentData, "0000000000");
       if (agentData) {
-        result.agentName =
-          agentData.accountDetails?.primaryContactPerson?.name || null;
+        result.agentName = agentData.accountDetails?.primaryContactPerson?.name || null;
       }
     }
 
@@ -231,6 +211,7 @@ export const getAllApplications = asyncHandler(async (req, res) => {
     applications: filteredApplications,
   });
 });
+
 
 const changeApplicationStatus = asyncHandler(async (req, res) => {
   const { institutionId } = req.params;
