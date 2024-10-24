@@ -283,6 +283,8 @@ const registerReferences = asyncHandler(async (req, res) => {
     // If edit is true, update the references without sending the email
     company.references = payload;  // Assuming the whole reference array is being replaced
   } else {
+    // console.log("++++++>>>>>>>")
+    // console.log(await generateAgentId(), "++++++++++++" )
     // Insert new references
     company.references = result.data;  // Insert the validated references
     company.pageStatus.status = 'notapproved';  // Set status to notapproved

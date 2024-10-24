@@ -4,13 +4,13 @@ import mongoose, { Schema } from "mongoose";
 const PhoneSchema = new Schema({
   countryCode: {
     type: String,
-    required: true
+    required: true,
   },
   phone: {
     type: String,
     required: true,
-    unique: true // Ensure phone is unique
-  }
+    unique: true, // Ensure phone is unique
+  },
 });
 
 // Define the schema for personal information
@@ -50,11 +50,11 @@ const PersonalInformationSchema = new Schema(
     },
     phone: {
       type: PhoneSchema,
-      required: false
+      required: false,
     },
-    profilePicture:{
+    profilePicture: {
       type: String,
-    }
+    },
   },
   { _id: false }
 );
@@ -167,12 +167,10 @@ const PreferencesSchema = new Schema(
 const StudentInformationSchema = new Schema(
   {
     studentId: {
-      type: Schema.Types.ObjectId,
-    ref: "Student",
-    required: true
+      type: String,
     },
     agentId: {
-       type: String
+      type: String,
     },
     personalInformation: {
       type: PersonalInformationSchema,
@@ -188,7 +186,7 @@ const StudentInformationSchema = new Schema(
     },
     mailingAddress: {
       type: MailingAddressSchema,
-      required: false
+      required: false,
     },
     preferences: {
       type: PreferencesSchema,
@@ -196,25 +194,24 @@ const StudentInformationSchema = new Schema(
     },
     pageCount: {
       type: Number,
-      default: 1
+      default: 1,
     },
-    pageStatus:{
-      status:{
-        type:String,
-        default: "registering"
-      },
-      message:{
+    pageStatus: {
+      status: {
         type: String,
-      }
+        default: "registering",
+      },
+      message: {
+        type: String,
+      },
     },
     stId: {
-      type: String
+      type: String,
     },
     deleted: {
       type: Boolean,
-      default: false
-    }
-
+      default: false,
+    },
   },
   {
     timestamps: true,
