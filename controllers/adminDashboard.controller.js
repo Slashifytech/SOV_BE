@@ -270,14 +270,13 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
       if (findAgent) {
         const temp = agentOfferLetterApproved(
           findAgent.accountDetails.primaryContactPerson.name,
-          studentName,
           collegeName,
           country,
           course
         );
         await sendEmail({
           to: findAgent.accountDetails.founderOrCeo.email,
-          subject: `Offer Letter Approved for ${studentName} Proceed with Next Steps`,
+          subject: `Offer Letter Approved for Proceed with Next Steps`,
           htmlContent: temp,
         });
       }
@@ -301,7 +300,6 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
       if (findAgent) {
         const temp = agentOfferLetterRejected(
           findAgent.accountDetails.primaryContactPerson.name,
-          studentName,
           collegeName,
           country,
           course,
@@ -309,7 +307,7 @@ const changeApplicationStatus = asyncHandler(async (req, res) => {
         );
         await sendEmail({
           to: findAgent.accountDetails.founderOrCeo.email,
-          subject: `Offer Letter Rejected for ${studentName} Action Required`,
+          subject: `Offer Letter Rejected for Action Required`,
           htmlContent: temp,
         });
       }
