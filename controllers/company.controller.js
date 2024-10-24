@@ -21,7 +21,8 @@ async function generateAgentId() {
   const baseId = `AG-${year}${month}${day}`;
 
   // Count the number of agents created with the same YYMMDD prefix
-  const count = await Company.countDocuments({ agentId: { $regex: `^${baseId}` } }).exec();
+  // Use the 'agId' field instead of 'agentId'
+  const count = await Company.countDocuments({ agId: { $regex: `^${baseId}` } }).exec();
 
   // The sequence number is based on the count (0-based index + 1)
   const sequenceNumber = count + 1;

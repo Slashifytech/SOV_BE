@@ -167,7 +167,9 @@ const PreferencesSchema = new Schema(
 const StudentInformationSchema = new Schema(
   {
     studentId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+        ref: "Student",
+        required: true
     },
     agentId: {
       type: String,

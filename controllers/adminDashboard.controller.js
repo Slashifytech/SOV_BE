@@ -188,9 +188,10 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         agentFirstName: null, // Placeholder for agent's first name
         agentLastName: null, // Placeholder for agent's last name
       };
-
-      const findAgent = await Company.findOne({ _id: userId });
-      const findStudent = await StudentInformation.findOne({ _id: userId });
+        console.log(userId)
+      const findAgent = await Company.findOne({ agentId: userId });
+      const findStudent = await StudentInformation.findOne({ studentId: userId });
+      // console.log(findAgent.pageCount, "aaaaa>>>>");
 
       // Determine the customUserId
       result.customUserId = findAgent
@@ -198,9 +199,10 @@ export const getAllApplications = asyncHandler(async (req, res) => {
         : findStudent
         ? findStudent.stId
         : null;
-
+        
       // Extract agent's firstName and lastName if found
       if (findAgent && findAgent.primaryContact) {
+          // console.log(findAgent, "+++++++")
         result.agentFirstName = findAgent.primaryContact.firstName;
         result.agentLastName = findAgent.primaryContact.lastName;
       }

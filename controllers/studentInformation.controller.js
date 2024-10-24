@@ -37,6 +37,7 @@ async function generateStudentId() {
 
 
 
+
 const studentPersonalInformation = asyncHandler(async (req, res) => {
   const { body: payload } = req;
 
