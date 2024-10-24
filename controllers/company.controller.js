@@ -1,3 +1,4 @@
+import { Agent } from "../models/agent.model.js";
 import { Company } from "../models/company.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -321,21 +322,35 @@ const registerReferences = asyncHandler(async (req, res) => {
 
 
 
-  const getCompanyData = asyncHandler(async (req, res) => {
-    // Ensure the user role is 'AGENT'
-    if (req.user.role !== '2') {
-      return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
-    }
-  
-    // Find the company associated with the agentId
-    const company = await Company.findOne({ agentId: req.user.id });
-    if (!company) {
-      return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
-    }
-  
-    // Return the company data (excluding the MongoDB ObjectId)
-    return res.status(200).json(new ApiResponse(200, company, "Company data fetched successfully"));
-  });
+const getCompanyData = asyncHandler(async (req, res) => {
+  if (req.user.role !== '2') {
+    return res.status(403).json(new ApiResponse(403, {}, "You are not authorized to view company data"));
+  }
+
+  const company = await Company.findOne({ agentId: req.user.id });
+  if (!company) {
+    return res.status(404).json(new ApiResponse(404, {}, "No company found for this agent"));
+  }
+
+  const agent = await Agent.findById(company.agentId);
+  if (!agent) {
+    return res.status(404).json(new ApiResponse(404, {}, "Agent not found"));
+  }
+
+  const agentEmail = agent.accountDetails?.founderOrCeo?.email || "N/A";
+  const agentPhone = agent.accountDetails?.founderOrCeo?.phone || "N/A";
+
+  // Combine company data with agentEmail and agentPhone
+  const responseData = {
+    ...company.toObject(), // Convert the company document to a plain object
+    agentEmail,
+    agentPhone,
+  };
+
+  // Return the combined data in the response
+  return res.status(200).json(new ApiResponse(200, responseData, "Company data fetched successfully"));
+});
+
   
    
 
