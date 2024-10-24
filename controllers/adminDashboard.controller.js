@@ -433,7 +433,7 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1; // Current page, defaults to 1
   const limit = parseInt(req.query.limit) || 10; // Limit per page, defaults to 10
 
-  const { search } = req.query; // Get the 'search' filter from query params
+  const { search, status } = req.query; // Get 'search' and 'status' filters from query params
 
   let formattedAgents = [];
   let formattedStudents = [];
@@ -442,24 +442,34 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
   let totalPages = 0;
   let totalStudentPages = 0;
 
-  // Create search conditions based on 'search' query for both agents and students
-  const searchCondition = search
-    ? {
-        $or: [
-          { "primaryContact.firstName": new RegExp(search, "i") },
-          { "primaryContact.lastName": new RegExp(search, "i") },
-        ],
-      }
-    : {}; // If no search query, don't apply a filter
+  // Create search conditions based on 'search' and 'status' query for both agents and students
+  const searchCondition = {
+    ...(
+      search
+        ? {
+            $or: [
+              { "primaryContact.firstName": new RegExp(search, "i") },
+              { "primaryContact.lastName": new RegExp(search, "i") },
+            ],
+          }
+        : {}
+    ),
+    ...(status ? { status } : {}), // Add status filter if provided
+  };
 
-  const studentSearchCondition = search
-    ? {
-        $or: [
-          { "personalInformation.firstName": new RegExp(search, "i") },
-          { "personalInformation.lastName": new RegExp(search, "i") },
-        ],
-      }
-    : {}; // If no search query, don't apply a filter
+  const studentSearchCondition = {
+    ...(
+      search
+        ? {
+            $or: [
+              { "personalInformation.firstName": new RegExp(search, "i") },
+              { "personalInformation.lastName": new RegExp(search, "i") },
+            ],
+          }
+        : {}
+    ),
+    ...(status ? { status } : {}), // Add status filter if provided
+  };
 
   // Fetch agents
   const agents = await Company.find({ pageCount: 6, ...searchCondition })
@@ -480,10 +490,7 @@ const getAllDataAgentStudent = asyncHandler(async (req, res) => {
     };
   });
 
-  totalCompanies = await Company.countDocuments({
-    pageCount: 6,
-    ...searchCondition,
-  });
+  totalCompanies = await Company.countDocuments({ pageCount: 6, ...searchCondition });
   totalPages = Math.ceil(totalCompanies / limit); // Calculate total pages for agents
 
   // Fetch students
@@ -593,7 +600,7 @@ const getStudentById = asyncHandler(async (req, res) => {
 });
 
 const updatePageStatus = asyncHandler(async (req, res) => {
-  const { id } = req.params; // Extracting id from route parameters
+  const { id } = req.params; 
   const { status, message, type } = req.body; // Extracting status, message, and type from the request body
 
   // Validate status
